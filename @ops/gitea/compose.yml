@@ -11,6 +11,15 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "3000:3000"
       - "222:22"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`git.w7.local`)"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+    networks:
+      - w7-ingress
     restart: unless-stopped
+
+networks:
+  w7-ingress:
+    external: true

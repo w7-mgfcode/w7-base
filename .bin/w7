@@ -248,6 +248,7 @@ EOF
     SPATH=$(resolve_stack "$TARGET")
     setup_env "$SPATH"
     echo -e "${GREEN}Booting stack: ${COMPOSE_PROJECT_NAME}${NC}"
+    docker network inspect w7-ingress >/dev/null 2>&1 || docker network create w7-ingress
     run_compose up -d
     ;;
   logs)

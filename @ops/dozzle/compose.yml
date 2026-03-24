@@ -4,6 +4,14 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}-dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "${DOZZLE_PORT:-8080}:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=Host(`logs.w7.local`)"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+    networks:
+      - w7-ingress
     restart: unless-stopped
+
+networks:
+  w7-ingress:
+    external: true

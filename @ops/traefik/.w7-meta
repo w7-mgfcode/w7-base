@@ -1,0 +1,8 @@
+version: "1.0"
+description: "Traefik Reverse Proxy & Ingress"
+git_trigger:
+  repository: "w7-localbase"
+  branch: "master"
+health_checks:
+  - type: "http"
+    endpoint: "http://localhost:8080/health"

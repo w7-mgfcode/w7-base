@@ -12,4 +12,5 @@ data/
 */*/data/
 
 # Ignore local config
-.omg/state/.specstory/
+.omg/state/
+.specstory/

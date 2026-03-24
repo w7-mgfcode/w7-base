@@ -169,3 +169,40 @@ See `.shared/SECRETS.md` for full operator guide.
 | Interactive `@prod` approvals | Planned |
 | Webhook audit logging | Planned |
 | Backup retention / restore | Planned |
+---
+
+## 🌐 Network Routing & Ingress
+
+W7-Base utilizes **Traefik** (`@ops/traefik`) as its global reverse proxy. This eliminates port conflicts and allows you to access services via clean local domain names instead of mapping everything to `localhost:PORT`.
+
+### Default Local Domains
+| Service | Domain |
+|---|---|
+| Traefik Dashboard | `http://localhost:8080` |
+| Dozzle Logs | `http://logs.w7.local` |
+| Gitea | `http://git.w7.local` |
+| Webhook Listener | `http://webhook.w7.local` |
+| Whoami (Test) | `http://whoami.w7.local` |
+
+### Setting Up Local DNS
+To route `.w7.local` domains on your machine, add them to your `/etc/hosts` file (or equivalent for your OS):
+
+```text
+127.0.0.1 logs.w7.local git.w7.local webhook.w7.local whoami.w7.local
+```
+
+### Adding Ingress to a Stack
+When creating a new stack, ensure it connects to the `w7-ingress` external network and define Traefik labels in your `compose.yml`:
+
+```yaml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.myapp.rule=Host(`myapp.w7.local`)"
+      - "traefik.http.services.myapp.loadbalancer.server.port=80"
+    networks:
+      - w7-ingress
+
+networks:
+  w7-ingress:
+    external: true
+```
