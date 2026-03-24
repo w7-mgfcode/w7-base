@@ -6,6 +6,7 @@ set -e
 
 REPO_NAME="$1"
 REF="$2"
+W7_ROOT="${W7_ROOT:-/w7-localbase}"
 
 echo "[INFO] Received webhook for $REPO_NAME on $REF"
 
@@ -15,7 +16,7 @@ echo "[INFO] Received webhook for $REPO_NAME on $REF"
 BRANCH="${REF#refs/heads/}"
 
 # Basic implementation: Search for metadata matching the git trigger
-MATCHING_STACKS=$(find /w7-localbase -maxdepth 3 -name ".w7-meta" -exec grep -l "repository: \"$REPO_NAME\"" {} + | xargs -r grep -l "branch: \"$BRANCH\"" | xargs -r dirname)
+MATCHING_STACKS=$(find "$W7_ROOT" -maxdepth 3 -name ".w7-meta" -exec grep -l "repository: \"$REPO_NAME\"" {} + | xargs -r grep -l "branch: \"$BRANCH\"" | xargs -r dirname)
 
 if [ -z "$MATCHING_STACKS" ]; then
   echo "[WARN] No stack configured for $REPO_NAME on branch $BRANCH. Ignoring."
@@ -26,7 +27,7 @@ for STACK_DIR in $MATCHING_STACKS; do
   echo "[INFO] Processing deployment for stack at $STACK_DIR"
   
   # Extract Zone and Stack name
-  REL_PATH=$(echo "$STACK_DIR" | sed 's|/w7-localbase/||')
+  REL_PATH=$(echo "$STACK_DIR" | sed "s|$W7_ROOT/||")
   ZONE=$(echo "$REL_PATH" | cut -d'/' -f1)
   STACK=$(echo "$REL_PATH" | cut -d'/' -f2)
 
@@ -68,7 +69,7 @@ for STACK_DIR in $MATCHING_STACKS; do
 
   # 5. Execute w7 up (Controlled deploy flow)
   echo "[INFO] Configuration valid. Executing w7 up..."
-  /w7-localbase/.bin/w7 up "$ZONE/$STACK" --force
+  "$W7_ROOT/.bin/w7" up "$ZONE/$STACK" --force
   
   echo "[SUCCESS] Deployment completed for $ZONE/$STACK"
 done

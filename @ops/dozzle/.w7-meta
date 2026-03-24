@@ -1,2 +1,4 @@
 version: "1.0"
 description: "Dozzle log viewer (Enhancement)"
+repository: "w7-localbase"
+branch: "master"
