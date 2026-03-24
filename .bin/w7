@@ -101,7 +101,12 @@ setup_env() {
 
   # Missing .env handling
   if [[ ! -f "${stack_path}/.env" && -f "${stack_path}/.env.example" && ! -f "${stack_path}/.env.sops" ]]; then
-    log_error "Missing .env but .env.example exists. Please configure secrets."
+    if [[ "$W7_CMD" == "backup" || "$W7_CMD" == "logs" || "$W7_CMD" == "stat" ]]; then
+      log_warn "Missing .env but .env.example exists. Proceeding for '$W7_CMD'."
+    else
+      log_error "Missing .env but .env.example exists. Please configure secrets."
+      exit 1
+    fi
   fi
 
   cd "$stack_path"
@@ -305,11 +310,22 @@ EOF
       exit 1
     fi
     
+    # Pre-check for read and traverse permissions
+    if find data/ \( -not -readable -o \( -type d -not -executable \) \) -print -quit 2>/dev/null | grep -q .; then
+      log_error "Permission denied: unable to read or traverse some files in 'data/'."
+      echo -e "${YELLOW}Hint: The container likely created files as root or another UID.${NC}"
+      echo -e "${YELLOW}Run this backup command with 'sudo' to safely read and archive the volume.${NC}"
+      exit 1
+    fi
+    
     archive_name="${COMPOSE_PROJECT_NAME}_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
     echo -e "${GREEN}Creating backup of data/ to ${archive_name}...${NC}"
     # Explicitly exclude .env and other non-data files
-    tar -czf "$archive_name" data/
-    echo "Backup complete: $SPATH/$archive_name"
+    if ! tar -czf "$archive_name" data/; then
+       log_error "Backup failed during tar execution."
+       exit 1
+    fi
+    echo -e "${GREEN}Backup complete: $SPATH/$archive_name${NC}"
     ;;
   prune)
     SPATH=$(resolve_stack "$TARGET")
