@@ -1,0 +1,7 @@
+services:
+  whoami:
+    image: traefik/whoami:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-prod-whoami}
+    ports:
+      - "${APP_PORT:-8000}:80"
+    restart: unless-stopped

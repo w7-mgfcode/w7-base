@@ -1,0 +1,4 @@
+name: whoami
+description: Pre-prod validation workload
+version: 1.0.0
+owner: omg-verifier
