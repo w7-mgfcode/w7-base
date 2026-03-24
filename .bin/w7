@@ -1,0 +1,499 @@
+#!/usr/bin/env bash
+# W7-Base CLI Entrypoint
+
+set -e
+
+W7_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+W7_GLOBAL_ENV="${W7_ROOT}/.shared/global.env"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+usage() {
+  echo -e "${GREEN}w7 - Local Orchestration Framework${NC}"
+  echo "Usage: w7 <command> [stack-name]"
+  echo ""
+  echo "Commands:"
+  echo "  up <stack>      Start a stack (wraps docker compose up -d)"
+  echo "  init <@zone/stack> Scaffold a new stack directory"
+  echo "  doctor          Validate W7-Base environment and stack contract"
+  echo "  secret <cmd> <stack> Manage encrypted secrets (edit, decrypt)"
+  echo "  go <stack>      Navigate to stack dir (Requires shell integration)"
+  echo "  stat            Show health matrix for all zones"
+  echo "  backup <stack>  Archive stack data/ directory"
+  echo "  logs <stack>    Tail zone-aware logs"
+  echo "  prune           Cleanup unused Docker resources (with guardrails)"
+  echo "  resolve <stack> Internal: print resolved stack path"
+}
+
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
+
+# Stack Resolution Algorithm
+resolve_stack() {
+  local target="$1"
+  if [[ -z "$target" ]]; then
+    log_error "Stack name required."
+  fi
+
+  # If user provided explicit zone (e.g. @dev/my-stack)
+  if [[ "$target" == @*/* ]]; then
+    local path="${W7_ROOT}/${target}"
+    if [[ -d "$path" && -f "${path}/.w7-meta" ]]; then
+      echo "$path"
+      return 0
+    fi
+  fi
+
+  # Search across all zones
+  local matches=($(find "${W7_ROOT}" -maxdepth 2 -mindepth 2 -type f -name ".w7-meta" | awk -F'/' '{print $(NF-2)"/"$(NF-1)}' | grep "/${target}$" || true))
+  
+  if [[ ${#matches[@]} -eq 0 ]]; then
+    log_error "Stack '${target}' not found in any zone."
+  elif [[ ${#matches[@]} -gt 1 ]]; then
+    log_error "Duplicate stacks found for '${target}'. Disambiguate by prepending the zone:"
+    for m in "${matches[@]}"; do
+      echo "  w7 <cmd> ${m}" >&2
+    done
+  else
+    echo "${W7_ROOT}/${matches[0]}"
+    return 0
+  fi
+}
+
+setup_env() {
+  local stack_path="$1"
+  local rel_path="${stack_path#${W7_ROOT}/}"
+  local zone=$(echo "$rel_path" | cut -d'/' -f1)
+  local stack=$(echo "$rel_path" | cut -d'/' -f2)
+  local zone_clean="${zone#@}"
+
+  # W7-Base Contract: Daemon Isolation
+  export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
+
+  # W7-Base Contract: Protected @prod
+  if [[ "$zone" == "@prod" && "$W7_CMD" == "up" && "$W7_FORCE" != "1" ]]; then
+    log_error "Deploying to @prod requires manual confirmation. (Interactive prompt not yet implemented, use --force if added later)"
+  fi
+
+  # Check Contract files
+  if [[ ! -f "${stack_path}/compose.yml" ]]; then
+    log_error "Missing compose.yml in ${stack_path}"
+  fi
+
+  # Secret Management Foundation (SOPS integration)
+  if [[ -f "${stack_path}/.env.sops" ]]; then
+    if [[ ! -f "${stack_path}/.env" ]] || [[ "${stack_path}/.env.sops" -nt "${stack_path}/.env" ]]; then
+      if command -v sops &> /dev/null; then
+        echo -e "${YELLOW}Auto-decrypting .env.sops to .env...${NC}"
+        if ! sops -d "${stack_path}/.env.sops" > "${stack_path}/.env"; then
+          log_error "Failed to decrypt ${stack_path}/.env.sops. Check your AGE key or SOPS config."
+          exit 1
+        fi
+      else
+        log_warn "Found .env.sops but 'sops' is not installed. Using existing .env if present."
+      fi
+    fi
+  fi
+
+  # Missing .env handling
+  if [[ ! -f "${stack_path}/.env" && -f "${stack_path}/.env.example" && ! -f "${stack_path}/.env.sops" ]]; then
+    log_error "Missing .env but .env.example exists. Please configure secrets."
+  fi
+
+  cd "$stack_path"
+}
+
+run_compose() {
+  # Build compose args: merge global env and local env
+  local compose_args=()
+  if [[ -f "$W7_GLOBAL_ENV" ]]; then
+    compose_args+=("--env-file" "$W7_GLOBAL_ENV")
+  fi
+  if [[ -f ".env" ]]; then
+    compose_args+=("--env-file" ".env")
+  fi
+
+  # Run compose
+  docker compose "${compose_args[@]}" "$@"
+}
+
+W7_CMD=$1
+TARGET=$2
+
+case "$W7_CMD" in
+  secret)
+    SUBCMD=$2
+    TARGET=$3
+    if [[ -z "$SUBCMD" || -z "$TARGET" ]]; then
+      echo "Usage: w7 secret <edit|decrypt|init> <stack>"
+      exit 1
+    fi
+    SPATH=$(resolve_stack "$TARGET")
+    
+    if ! command -v sops &> /dev/null; then
+      log_error "'sops' is not installed. Please install Mozilla SOPS."
+      exit 1
+    fi
+    
+    case "$SUBCMD" in
+      init)
+        if [[ -f "${SPATH}/.env.sops" ]]; then
+           log_error "${SPATH}/.env.sops already exists."
+           exit 1
+        fi
+        echo -e "${GREEN}Creating new .env.sops for stack...${NC}"
+        cd "$SPATH"
+        if [[ -f ".env" ]]; then
+           sops -e ".env" > ".env.sops"
+           echo -e "${GREEN}Encrypted existing .env into .env.sops${NC}"
+        else
+           touch .env.empty
+           sops -e .env.empty > ".env.sops"
+           rm .env.empty
+           echo -e "${GREEN}Created empty .env.sops${NC}"
+        fi
+        ;;
+      edit)
+        echo -e "${GREEN}Opening .env.sops in SOPS editor...${NC}"
+        cd "$SPATH"
+        sops "${SPATH}/.env.sops"
+        ;;
+      decrypt)
+        echo -e "${GREEN}Decrypting .env.sops to .env...${NC}"
+        cd "$SPATH"
+        sops -d "${SPATH}/.env.sops" > "${SPATH}/.env"
+        ;;
+      *)
+        echo "Unknown secret command: $SUBCMD"
+        exit 1
+        ;;
+    esac
+    ;;
+  init)
+    if [[ -z "$TARGET" ]]; then
+      log_error "Stack name required (e.g., w7 init @dev/my-stack)."
+      exit 1
+    fi
+    if [[ "$TARGET" != @*/* ]]; then
+      log_error "Must specify zone prefix (e.g., @dev/my-stack, @lab/test-stack)."
+      exit 1
+    fi
+    zone=$(echo "$TARGET" | cut -d'/' -f1)
+    stack=$(echo "$TARGET" | cut -d'/' -f2)
+    stack_path="${W7_ROOT}/${zone}/${stack}"
+    
+    if [[ ! -d "${W7_ROOT}/${zone}" ]]; then
+      log_error "Zone '${zone}' does not exist."
+      exit 1
+    fi
+    
+    if [[ -d "$stack_path" ]]; then
+      log_error "Stack directory '${stack_path}' already exists."
+      exit 1
+    fi
+    
+    echo -e "${GREEN}Scaffolding new stack: ${TARGET}${NC}"
+    mkdir -p "${stack_path}/data"
+    
+    cat << EOF > "${stack_path}/.w7-meta"
+version: "1.0"
+description: "Autogenerated stack for ${stack}"
+git_trigger:
+  repository: "gitea_user/repo_name"
+  branch: "main"
+health_checks:
+  - type: "http"
+    endpoint: "http://localhost:8080/health"
+EOF
+
+    cat << EOF > "${stack_path}/compose.yml"
+services:
+  app:
+    image: alpine:latest
+    container_name: \${COMPOSE_PROJECT_NAME}-app
+    command: tail -f /dev/null
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+EOF
+
+    cat << EOF > "${stack_path}/.env.example"
+# Required environment variables for ${stack}
+# Define each required key with an example (non-secret) value.
+# Operators copy this to .env and fill in real values.
+# APP_PORT=8080
+# DB_PASSWORD=changeme
+EOF
+
+    cat << EOF > "${stack_path}/.env"
+# Stack: ${TARGET}
+# Copy values from .env.example and set real secrets here.
+# This file is excluded from Git by .gitignore.
+EOF
+
+    echo -e "${GREEN}Success! Stack created at ${TARGET}${NC}"
+    echo -e "Next steps:"
+    echo -e "  1. Edit ${zone}/${stack}/.env.example with required variable names"
+    echo -e "  2. Copy to .env and fill in real secrets"
+    echo -e "  3. w7 up ${TARGET}"
+    if [[ "$zone" == "@prod" || "$zone" == "@ops" ]]; then
+      echo -e "  ${YELLOW}Tip:${NC} For ${zone}, consider encrypting secrets with: w7 secret init ${TARGET}"
+    fi
+    ;;
+  up)
+    SPATH=$(resolve_stack "$TARGET")
+    setup_env "$SPATH"
+    echo -e "${GREEN}Booting stack: ${COMPOSE_PROJECT_NAME}${NC}"
+    run_compose up -d
+    ;;
+  logs)
+    SPATH=$(resolve_stack "$TARGET")
+    setup_env "$SPATH"
+    # Zone-aware prefix logging
+    run_compose logs -f --tail=100
+    ;;
+  resolve)
+    # Internal command used by 'w7 go' shell wrapper
+    resolve_stack "$TARGET"
+    ;;
+  go)
+    log_error "\'w7 go\' must be run via the shell wrapper. Ensure you have sourced .shared/w7.sh in your .bashrc/.zshrc"
+    exit 1
+    ;;
+  stat)
+    echo -e "${GREEN}W7-Base Health Matrix${NC}"
+    printf "%-10s | %-20s | %-15s | %-20s\n" "ZONE" "STACK" "STATUS" "IMAGE"
+    echo "-----------------------------------------------------------------------"
+    
+    # Iterate over all zones to build the matrix
+    for z in @ops @dev @prod @lab; do
+      zone_clean="${z#@}"
+      if [ -d "$W7_ROOT/$z" ]; then
+        for stack_path in "$W7_ROOT/$z"/*; do
+          if [ -f "$stack_path/.w7-meta" ]; then
+            stack=$(basename "$stack_path")
+            proj_name="${zone_clean}-${stack}"
+            
+            # Get running container count for the project
+            running=$(docker ps --filter "label=com.docker.compose.project=$proj_name" --format "{{.Names}}" | wc -l)
+            
+            status_txt="Down"
+            if [ "$running" -gt 0 ]; then
+               status_txt="\033[0;32mUp ($running)\033[0m"
+            fi
+            
+            printf "%-10s | %-20s | %-26s | %-20s\n" "$z" "$stack" "$status_txt" "-"
+          fi
+        done
+      fi
+    done
+    
+    echo ""
+    echo -e "${YELLOW}Note: For deeper insights, use 'docker stats' or a visualizer like Dozzle.${NC}"
+    ;;
+  backup)
+    SPATH=$(resolve_stack "$TARGET")
+    setup_env "$SPATH"
+    
+    if [ ! -d "data" ]; then
+      log_error "No 'data/' directory found in stack. Nothing to backup."
+      exit 1
+    fi
+    
+    archive_name="${COMPOSE_PROJECT_NAME}_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    echo -e "${GREEN}Creating backup of data/ to ${archive_name}...${NC}"
+    # Explicitly exclude .env and other non-data files
+    tar -czf "$archive_name" data/
+    echo "Backup complete: $SPATH/$archive_name"
+    ;;
+  prune)
+    SPATH=$(resolve_stack "$TARGET")
+    setup_env "$SPATH"
+    
+    rel_path="${SPATH#${W7_ROOT}/}"
+    zone=$(echo "$rel_path" | cut -d'/' -f1)
+    
+    if [[ "$zone" != "@lab" ]]; then
+      log_error "'prune' is strictly limited to the @lab zone to prevent accidental data loss in persistent zones."
+      exit 1
+    fi
+    
+    echo -e "${YELLOW}Pruning stack ${COMPOSE_PROJECT_NAME} in @lab...${NC}"
+    run_compose down -v --remove-orphans
+    ;;
+  doctor)
+    echo -e "${GREEN}W7-Base System Validation (Doctor)${NC}"
+    echo "================================================="
+    
+    errors=0
+    warnings=0
+    
+    check_tool() {
+      if ! command -v "$1" &> /dev/null; then
+        echo -e "${RED}[ERROR]${NC} Missing required tool: $1"
+        errors=$((errors+1))
+      else
+        echo -e "${GREEN}[OK]${NC} Tool '$1' is installed."
+      fi
+    }
+    
+    check_optional_tool() {
+      if ! command -v "$1" &> /dev/null; then
+        echo -e "${YELLOW}[WARN]${NC} Optional tool missing: $1 (Required for secret management)"
+        warnings=$((warnings+1))
+      else
+        echo -e "${GREEN}[OK]${NC} Optional tool '$1' is installed."
+      fi
+    }
+    
+    echo -e "\n${YELLOW}1. Core Dependencies${NC}"
+    check_tool "docker"
+    check_tool "tar"
+    check_tool "bash"
+    if docker compose version &> /dev/null; then
+      echo -e "${GREEN}[OK]${NC} Tool 'docker compose' plugin is installed."
+    else
+      echo -e "${RED}[ERROR]${NC} Missing required tool: docker compose plugin"
+      errors=$((errors+1))
+    fi
+    check_optional_tool "sops"
+    check_optional_tool "age"
+    
+    echo -e "\n${YELLOW}2. Directory Structure & Zones${NC}"
+    for z in @ops @dev @prod @lab .shared .bin; do
+      if [[ -d "${W7_ROOT}/$z" ]]; then
+        echo -e "${GREEN}[OK]${NC} Required directory '$z' exists."
+      else
+        echo -e "${RED}[ERROR]${NC} Missing required directory: '$z'"
+        errors=$((errors+1))
+      fi
+    done
+    
+    echo -e "\n${YELLOW}3. Environment Bridge & Shell Integrations${NC}"
+    if [[ -f "${W7_ROOT}/.shared/global.env" ]]; then
+      echo -e "${GREEN}[OK]${NC} .shared/global.env exists."
+    else
+      echo -e "${YELLOW}[WARN]${NC} .shared/global.env is missing. Recommended for global variables."
+      warnings=$((warnings+1))
+    fi
+    if [[ -f "${W7_ROOT}/.shared/w7.sh" ]]; then
+      echo -e "${GREEN}[OK]${NC} .shared/w7.sh shell integration exists."
+    else
+      echo -e "${RED}[ERROR]${NC} .shared/w7.sh is missing. 'w7 go' and aliases will fail."
+      errors=$((errors+1))
+    fi
+    
+    echo -e "\n${YELLOW}4. Secret Management${NC}"
+    if [[ -f "${W7_ROOT}/.gitignore" ]]; then
+      if grep -q '\.env' "${W7_ROOT}/.gitignore"; then
+        echo -e "${GREEN}[OK]${NC} .gitignore exists and excludes .env files."
+      else
+        echo -e "${YELLOW}[WARN]${NC} .gitignore exists but does not exclude .env files."
+        warnings=$((warnings+1))
+      fi
+    else
+      echo -e "${RED}[ERROR]${NC} No .gitignore found. Secrets may be committed accidentally."
+      errors=$((errors+1))
+    fi
+    if [[ -f "${W7_ROOT}/.sops.yaml" ]]; then
+      echo -e "${GREEN}[OK]${NC} .sops.yaml SOPS configuration exists."
+      if grep -q 'age1xx' "${W7_ROOT}/.sops.yaml"; then
+        echo -e "${YELLOW}[WARN]${NC} .sops.yaml contains placeholder AGE key. Run 'age-keygen' and update .sops.yaml."
+        warnings=$((warnings+1))
+      fi
+    else
+      echo -e "${YELLOW}[WARN]${NC} .sops.yaml not found. SOPS encryption is not configured."
+      warnings=$((warnings+1))
+    fi
+
+    echo -e "\n${YELLOW}5. Stack Contract Validation${NC}"
+    declare -A stack_names
+    for z in @ops @dev @prod @lab; do
+      if [[ -d "${W7_ROOT}/$z" ]]; then
+        for stack_path in "${W7_ROOT}/$z"/*; do
+          if [[ -f "${stack_path}/.w7-meta" ]]; then
+            stack=$(basename "$stack_path")
+            echo "Checking stack: $z/$stack"
+            
+            # Duplicate name check
+            if [[ -n "${stack_names[$stack]}" ]]; then
+              echo -e "  ${YELLOW}[WARN]${NC} Duplicate stack name '$stack' found in both '$z' and '${stack_names[$stack]}'. w7 resolves explicitly via zone prefix."
+              warnings=$((warnings+1))
+            fi
+            stack_names[$stack]="$z"
+            
+            # File checks
+            if [[ ! -f "${stack_path}/compose.yml" ]]; then
+              echo -e "  ${RED}[ERROR]${NC} Missing compose.yml"
+              errors=$((errors+1))
+            fi
+            if [[ ! -d "${stack_path}/data" ]]; then
+              echo -e "  ${YELLOW}[WARN]${NC} Missing data/ directory. Persistent volumes might not be isolated."
+              warnings=$((warnings+1))
+            fi
+            if [[ ! -f "${stack_path}/.env" && ! -f "${stack_path}/.env.example" && ! -f "${stack_path}/.env.sops" ]]; then
+              echo -e "  ${YELLOW}[WARN]${NC} Neither .env, .env.example, nor .env.sops exists."
+              warnings=$((warnings+1))
+            fi
+            
+            if [[ -f "${stack_path}/.env.sops" && ! -f "${W7_ROOT}/.sops.yaml" && ! -f "${stack_path}/.sops.yaml" ]]; then
+              echo -e "  ${YELLOW}[WARN]${NC} .env.sops found but no .sops.yaml in root or stack."
+              warnings=$((warnings+1))
+            fi
+
+            # .env key validation against .env.example
+            if [[ -f "${stack_path}/.env.example" && -f "${stack_path}/.env" ]]; then
+              # Extract non-comment, non-empty KEY= lines from .env.example
+              missing_keys=""
+              while IFS= read -r line; do
+                key=$(echo "$line" | grep -oP '^\s*[A-Za-z_][A-Za-z0-9_]*(?==)' || true)
+                if [[ -n "$key" ]]; then
+                  if ! grep -qP "^\s*${key}\s*=" "${stack_path}/.env" 2>/dev/null; then
+                    missing_keys="${missing_keys} ${key}"
+                  fi
+                fi
+              done < "${stack_path}/.env.example"
+              if [[ -n "$missing_keys" ]]; then
+                echo -e "  ${YELLOW}[WARN]${NC} .env is missing keys defined in .env.example:${missing_keys}"
+                warnings=$((warnings+1))
+              fi
+            fi
+
+            # Compose config validation
+            cd "$stack_path"
+            zone_clean="${z#@}"
+            export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
+            compose_args=()
+            if [[ -f "$W7_GLOBAL_ENV" ]]; then compose_args+=("--env-file" "$W7_GLOBAL_ENV"); fi
+            if [[ -f ".env" ]]; then compose_args+=("--env-file" ".env"); fi
+            
+            if docker compose "${compose_args[@]}" config -q &> /dev/null; then
+               echo -e "  ${GREEN}[OK]${NC} compose config is valid."
+            else
+               echo -e "  ${RED}[ERROR]${NC} docker compose config validation failed for $z/$stack"
+               errors=$((errors+1))
+            fi
+          fi
+        done
+      fi
+    done
+    
+    echo -e "\n================================================="
+    if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
+      echo -e "${GREEN}Doctor found no issues. System is healthy.${NC}"
+    elif [[ $errors -eq 0 ]]; then
+      echo -e "${YELLOW}Doctor completed with 0 errors and $warnings warnings.${NC}"
+    else
+      echo -e "${RED}Doctor found $errors errors and $warnings warnings. Please fix the errors to ensure stable operation.${NC}"
+      exit 1
+    fi
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

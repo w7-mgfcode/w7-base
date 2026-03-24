@@ -1,0 +1,16 @@
+services:
+  listener:
+    image: almir/webhook:2.8.1
+    container_name: ${COMPOSE_PROJECT_NAME}-listener
+    command: -verbose -hooks=/etc/webhook/hooks.json -hotreload -template
+    volumes:
+      - ./hooks.json:/etc/webhook/hooks.json:ro
+      - ./scripts:/scripts:ro
+      # DANGER ZONE: The listener requires Docker access to trigger deployments.
+      # Documented in GITOPS_DESIGN.md as a primary attack surface.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount the entire W7 framework so the script can execute `w7 up`
+      - ../..:/w7-localbase
+    ports:
+      - "9000:9000"
+    restart: unless-stopped

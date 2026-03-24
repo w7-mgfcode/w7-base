@@ -1,0 +1,8 @@
+services:
+  app:
+    image: alpine:latest
+    container_name: ${COMPOSE_PROJECT_NAME}-app
+    command: tail -f /dev/null
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

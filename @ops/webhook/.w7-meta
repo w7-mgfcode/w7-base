@@ -1,0 +1,5 @@
+version: "1.0"
+description: "GitOps Webhook Listener (adnanh/webhook)"
+git_trigger:
+  repository: "none"
+  branch: "none"

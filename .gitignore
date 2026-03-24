@@ -1,0 +1,15 @@
+# W7-Base Global GitIgnore
+
+# Always ignore secrets
+.env
+*.env
+!.env.example
+!.env.sops
+
+# Ignore persistent data volumes
+data/
+*/data/
+*/*/data/
+
+# Ignore local config
+.omg/state/

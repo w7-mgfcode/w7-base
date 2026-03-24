@@ -1,0 +1,18 @@
+# W7-Base SOPS Configuration
+# Defines encryption rules for secret files across all zones.
+#
+# Setup:
+#   1. Install: apt install age sops  (or brew install age sops)
+#   2. Generate key: age-keygen -o ~/.config/sops/age/keys.txt
+#   3. Copy the public key (age1...) and paste it below
+#   4. Encrypt: w7 secret init <stack>
+#
+# SOPS will auto-discover this file from any stack subdirectory.
+
+creation_rules:
+  # All .env.sops files across every zone use the same operator AGE key
+  - path_regex: \.env\.sops$
+    age: "age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    # ^^^ Replace with your actual AGE public key from:
+    #     age-keygen -o ~/.config/sops/age/keys.txt
+    #     The public key is printed to stderr during generation.
