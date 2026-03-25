@@ -126,3 +126,24 @@
 | `W7-17.1` | "No Root Volume Mounts in @prod" policy | `omg-executor` | W7-16.3 | Yes | `shared` | Prevents mounting / or /etc in @prod | verified |
 | `W7-17.2` | "Zone-Aware Ingress naming" policy | `omg-architect` | W7-16.3 | Yes | `shared` | Ensures prod uses standard domains | verified |
 | `W7-17.3` | JSON output for policy violations in `doctor` | `omg-executor` | W7-16.3 | No | `bin` | `doctor --json` prints violations | verified |
+
+## Slice 18: Phase 8 - Observability Foundation
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-18.1` | Scaffold and deploy `@ops/prometheus` | `omg-executor` | None | No | `ops` | Prometheus accessible at `prom.w7.local` | verified |
+| `W7-18.2` | Scaffold and deploy `@ops/grafana` | `omg-executor` | W7-18.1 | No | `ops` | Grafana accessible at `grafana.w7.local` | verified |
+| `W7-18.3` | Deploy `node-exporter` for host visibility | `omg-executor` | None | Yes | `ops` | Metrics available in Prometheus | verified |
+
+## Slice 19: Phase 8 - W7 Platform Exporter (JSON to Metrics)
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-19.1` | Implement `w7-exporter` script/container | `omg-executor` | W7-17.3 | No | `bin`, `ops` | Exporter runs `w7 doctor --json` | planned |
+| `W7-19.2` | Map JSON output to Prometheus metrics | `omg-architect` | W7-19.1 | No | `ops` | Metrics visible in `/metrics` endpoint | planned |
+| `W7-19.3` | Integrate `w7 stat` zone/stack visibility | `omg-executor` | W7-19.2 | Yes | `ops` | Container counts visible as metrics | planned |
+
+## Slice 20: Phase 8 - Cross-Zone Dashboards & Local Alerting
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-20.1` | Create Grafana dashboards for global W7 health | `omg-editor` | W7-18.2, 19.3 | No | `ops` | Dashboard shows cross-zone status | planned |
+| `W7-20.2` | Add local alerting rules for failures/policies | `omg-architect` | W7-20.1 | No | `ops` | Alerts trigger on policy violations | planned |
+| `W7-20.3` | Document observability-driven operations | `omg-editor` | W7-20.2 | No | `shared` | README updated with observability ops | planned |

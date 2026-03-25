@@ -1,0 +1,3 @@
+zone: ops
+service: node-exporter
+description: "Prometheus Node Exporter for host visibility"

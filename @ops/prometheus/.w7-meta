@@ -1,0 +1,4 @@
+zone: ops
+service: prometheus
+description: "Prometheus monitoring server"
+dependencies: ["traefik"]

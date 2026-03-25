@@ -1,0 +1,4 @@
+zone: ops
+service: grafana
+description: "Grafana visualization platform"
+dependencies: ["prometheus"]

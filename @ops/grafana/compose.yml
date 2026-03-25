@@ -1,0 +1,21 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ops-grafana
+    volumes:
+      - ./data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.w7.local`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    networks:
+      - w7-ingress
+    restart: unless-stopped
+
+networks:
+  w7-ingress:
+    external: true
