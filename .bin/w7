@@ -541,6 +541,48 @@ EOF
         done
       fi
     done
+
+    echo -e "\n${YELLOW}6. GitOps & Pipeline Diagnostics (v2)${NC}"
+    
+    # 14.1 Webhook HMAC check
+    if [[ -f "${W7_ROOT}/@ops/webhook/.env" ]]; then
+      W_SECRET=$(grep '^WEBHOOK_SECRET=' "${W7_ROOT}/@ops/webhook/.env" | cut -d'=' -f2- || true)
+      if [[ -z "$W_SECRET" || "$W_SECRET" == "CHANGE_ME_IN_PRODUCTION" ]]; then
+        echo -e "  ${YELLOW}[WARN]${NC} Webhook secret is missing or using default value in @ops/webhook/.env"
+        warnings=$((warnings+1))
+      else
+        echo -e "  ${GREEN}[OK]${NC} Webhook secret is configured."
+      fi
+    fi
+
+    # 14.2 act-runner status
+    if docker ps --filter "name=act-runner" --format "{{.Status}}" | grep -q "Up"; then
+      echo -e "  ${GREEN}[OK]${NC} act-runner container is running."
+    else
+      echo -e "  ${YELLOW}[WARN]${NC} act-runner container is not running."
+      warnings=$((warnings+1))
+    fi
+
+    # 14.3 Traefik Ingress Connectivity (Localhost DNS check)
+    for domain in git.w7.local logs.w7.local; do
+      if grep -q "$domain" /etc/hosts 2>/dev/null; then
+        echo -e "  ${GREEN}[OK]${NC} Ingress domain '$domain' found in /etc/hosts."
+      else
+        echo -e "  ${YELLOW}[WARN]${NC} Ingress domain '$domain' not found in /etc/hosts. Local routing may fail."
+        warnings=$((warnings+1))
+      fi
+    done
+
+    # 14.4 Secret Sealing (@prod)
+    for stack_path in "${W7_ROOT}/@prod"/*; do
+      if [[ -d "$stack_path" && -f "${stack_path}/.w7-meta" ]]; then
+        stack=$(basename "$stack_path")
+        if [[ ! -f "${stack_path}/.env.sops" ]]; then
+          echo -e "  ${YELLOW}[WARN]${NC} Prod stack '@prod/$stack' is not sealed (.env.sops missing)."
+          warnings=$((warnings+1))
+        fi
+      fi
+    done
     
     echo -e "\n================================================="
     if [[ $errors -eq 0 && $warnings -eq 0 ]]; then

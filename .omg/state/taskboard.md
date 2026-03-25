@@ -101,10 +101,10 @@
 ## Slice 14: Phase 6 - GitOps-Aware Diagnostics (w7 doctor v2)
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
 |---|---|---|---|---|---|---|---|
-| `W7-14.1` | Webhook HMAC parity check | `omg-executor` | None | No | `bin` | `doctor` compares HMAC secrets | planned |
-| `W7-14.2` | act-runner heartbeat/status check | `omg-executor` | None | No | `bin` | `doctor` checks if runner is online | planned |
-| `W7-14.3` | Traefik ingress connectivity checks | `omg-executor` | None | No | `bin` | `doctor` pings internal domains | planned |
-| `W7-14.4` | Secret sealing validation for `@prod` | `omg-executor` | None | No | `bin` | `doctor` warns on unsealed prod secrets | planned |
+| `W7-14.1` | Webhook HMAC parity check | `omg-executor` | None | No | `bin` | `doctor` compares HMAC secrets | verified |
+| `W7-14.2` | act-runner heartbeat/status check | `omg-executor` | None | No | `bin` | `doctor` checks if runner is online | verified |
+| `W7-14.3` | Traefik ingress connectivity checks | `omg-executor` | None | No | `bin` | `doctor` pings internal domains | verified |
+| `W7-14.4` | Secret sealing validation for `@prod` | `omg-executor` | None | No | `bin` | `doctor` warns on unsealed prod secrets | verified |
 
 ## Slice 15: Phase 6 - Approval-Gated CI/CD Workflows
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
