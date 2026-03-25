@@ -3,6 +3,7 @@ services:
     image: gitea/gitea:1.21.0
     container_name: ${COMPOSE_PROJECT_NAME}-server
     environment:
+      - GITEA__actions__ENABLED=true
       - USER_UID=1000
       - USER_GID=1000
       - GITEA__database__DB_TYPE=sqlite3
