@@ -14,7 +14,11 @@ NC='\033[0m'
 
 usage() {
   echo -e "${GREEN}w7 - Local Orchestration Framework${NC}"
-  echo "Usage: w7 <command> [stack-name]"
+  echo "Usage: w7 [flags] <command> [stack-name]"
+  echo ""
+  echo "Flags:"
+  echo "  --yes, -y       Skip interactive prompts (e.g., for @prod)"
+  echo "  --force, -f     Force execution (bypasses some safety checks)"
   echo ""
   echo "Commands:"
   echo "  up <stack>      Start a stack (wraps docker compose up -d)"
@@ -31,6 +35,34 @@ usage() {
 
 log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
+
+# Global flags
+W7_YES=0
+W7_FORCE=0
+
+# Simple flag parser
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --yes|-y)
+      W7_YES=1
+      shift
+      ;;
+    --force|-f)
+      W7_FORCE=1
+      shift
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+W7_CMD=$1
+TARGET=$2
 
 # Stack Resolution Algorithm
 resolve_stack() {
@@ -49,7 +81,7 @@ resolve_stack() {
   fi
 
   # Search across all zones
-  local matches=($(find "${W7_ROOT}" -maxdepth 2 -mindepth 2 -type f -name ".w7-meta" | awk -F'/' '{print $(NF-2)"/"$(NF-1)}' | grep "/${target}$" || true))
+  local matches=($(find "${W7_ROOT}" -maxdepth 3 -mindepth 3 -type f -name ".w7-meta" | awk -F'/' '{print $(NF-2)"/"$(NF-1)}' | grep "/${target}$" || true))
   
   if [[ ${#matches[@]} -eq 0 ]]; then
     log_error "Stack '${target}' not found in any zone."
@@ -75,8 +107,22 @@ setup_env() {
   export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
 
   # W7-Base Contract: Protected @prod
-  if [[ "$zone" == "@prod" && "$W7_CMD" == "up" && "$W7_FORCE" != "1" ]]; then
-    log_error "Deploying to @prod requires manual confirmation. (Interactive prompt not yet implemented, use --force if added later)"
+  if [[ "$zone" == "@prod" && "$W7_CMD" == "up" ]]; then
+    # 1. Lock Check (W7-13.3)
+    if [[ -f "${stack_path}/.w7-lock" ]]; then
+      log_error "Stack is locked by .w7-lock. Deployment aborted."
+      exit 1
+    fi
+
+    # 2. Confirmation Prompt (W7-13.1) & Bypass (W7-13.2)
+    if [[ "$W7_YES" != "1" && "$W7_FORCE" != "1" ]]; then
+      echo -ne "${YELLOW}ARE YOU SURE you want to deploy to @prod/${stack}? [y/N] ${NC}"
+      read -r confirm
+      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Deployment cancelled."
+        exit 0
+      fi
+    fi
   fi
 
   # Check Contract files
@@ -125,9 +171,6 @@ run_compose() {
   # Run compose
   docker compose "${compose_args[@]}" "$@"
 }
-
-W7_CMD=$1
-TARGET=$2
 
 case "$W7_CMD" in
   secret)
