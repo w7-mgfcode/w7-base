@@ -1,0 +1,4 @@
+zone: ops
+service: act-runner
+description: "Gitea Actions local runner"
+dependencies: ["gitea"]
