@@ -206,3 +206,57 @@ networks:
   w7-ingress:
     external: true
 ```
+
+---
+
+## 🤖 CI/CD with Gitea Actions
+
+W7-Base includes a local, integrated CI/CD pipeline powered by **Gitea Actions** and an isolated `act-runner` stack (`@ops/act-runner`). This allows you to run GitHub Actions-compatible workflows directly on your local infrastructure.
+
+### 1. Enable Actions in Gitea
+Actions are pre-configured in the `@ops/gitea` stack's `compose.yml`, but you may need to ensure it's enabled in your repository settings:
+1. Navigate to your repository in Gitea (`http://git.w7.local`).
+2. Go to **Settings > General**.
+3. Check the **Enable Repository Actions** box.
+
+### 2. The Act-Runner Layout
+The `act-runner` stack is scaffolded identically to other W7 workloads:
+```text
+@ops/act-runner/
+├── .w7-meta          # W7 routing metadata
+├── compose.yml       # act_runner container configuration
+├── data/             # Persistent storage for runner state
+└── .env.example      # Required variables (URL, Token, Name)
+```
+
+### 3. Registering the Runner
+To connect the runner to your local Gitea instance, you must provide a registration token.
+
+1. In Gitea, navigate to **Site Administration > Actions > Runners** (for a global runner) or **Repository Settings > Actions > Runners** (for a repo-specific runner).
+2. Click **Create new Runner** and copy the **Registration Token**.
+3. Create an `.env` file in `@ops/act-runner/`:
+   ```bash
+   cp @ops/act-runner/.env.example @ops/act-runner/.env
+   ```
+4. Edit `@ops/act-runner/.env` and insert your token:
+   ```ini
+   GITEA_INSTANCE_URL=http://gitea-server:3000
+   GITEA_RUNNER_REGISTRATION_TOKEN=your_token_here
+   GITEA_RUNNER_NAME=w7-local-runner
+   ```
+5. Start the runner:
+   ```bash
+   w7 up @ops/act-runner
+   ```
+   *The runner will automatically register itself with Gitea on startup.*
+
+### 4. Networking Assumptions
+The `act-runner` container is attached to the `w7-ingress` Docker network. This allows it to resolve the `gitea-server` container directly via Docker's internal DNS without traversing the host network.
+
+*   **`GITEA_INSTANCE_URL=http://gitea-server:3000`**: The runner communicates with Gitea over the internal Docker network on port `3000`. It does *not* use the external `git.w7.local` domain to register, avoiding DNS loopback issues on the host.
+*   **Docker Socket**: The runner requires access to `/var/run/docker.sock` (configured in `compose.yml`) to spawn job containers.
+
+### What is Scaffolded vs. Operator Input
+*   **Scaffolded:** The W7 framework provides the `compose.yml`, the `w7-ingress` network attachment, and the `.env.example` template. The `act-runner` container is fully configured to read from these variables.
+*   **Operator Input:** You must manually generate the registration token in the Gitea UI, create the `.env` file, and paste the token. (Tokens cannot be securely pre-provisioned via git).
+
