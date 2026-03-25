@@ -1,0 +1,4 @@
+zone: ops
+service: w7-exporter
+description: "Transforms w7 CLI state into Prometheus metrics"
+dependencies: ["prometheus"]

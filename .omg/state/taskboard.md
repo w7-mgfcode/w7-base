@@ -137,9 +137,9 @@
 ## Slice 19: Phase 8 - W7 Platform Exporter (JSON to Metrics)
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
 |---|---|---|---|---|---|---|---|
-| `W7-19.1` | Implement `w7-exporter` script/container | `omg-executor` | W7-17.3 | No | `bin`, `ops` | Exporter runs `w7 doctor --json` | planned |
-| `W7-19.2` | Map JSON output to Prometheus metrics | `omg-architect` | W7-19.1 | No | `ops` | Metrics visible in `/metrics` endpoint | planned |
-| `W7-19.3` | Integrate `w7 stat` zone/stack visibility | `omg-executor` | W7-19.2 | Yes | `ops` | Container counts visible as metrics | planned |
+| `W7-19.1` | Implement `w7-exporter` script/container | `omg-executor` | W7-17.3 | No | `bin`, `ops` | Exporter runs `w7 doctor --json` | verified |
+| `W7-19.2` | Map JSON output to Prometheus metrics | `omg-architect` | W7-19.1 | No | `ops` | Metrics visible in `/metrics` endpoint | verified |
+| `W7-19.3` | Integrate `w7 stat` zone/stack visibility | `omg-executor` | W7-19.2 | Yes | `ops` | Container counts visible as metrics | verified |
 
 ## Slice 20: Phase 8 - Cross-Zone Dashboards & Local Alerting
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |

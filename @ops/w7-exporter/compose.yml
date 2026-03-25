@@ -1,0 +1,26 @@
+services:
+  w7-exporter:
+    image: python:3.11-alpine
+    container_name: ops-w7-exporter
+    volumes:
+      - .:/app
+      - ../../.bin:/w7-localbase/.bin
+      - ../../.bin/w7:/usr/local/bin/w7
+      - ../../.shared:/w7-localbase/.shared
+      - ../../@ops:/w7-localbase/@ops
+      - ../../@dev:/w7-localbase/@dev
+      - ../../@prod:/w7-localbase/@prod
+      - ../../@lab:/w7-localbase/@lab
+      - ../../.gitignore:/w7-localbase/.gitignore
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    environment:
+      - W7_ROOT=/w7-localbase
+    command: /bin/sh -c "apk add --no-cache bash docker-cli docker-cli-compose && python3 exporter.py"
+    networks:
+      - w7-ingress
+    restart: unless-stopped
+
+networks:
+  w7-ingress:
+    external: true
