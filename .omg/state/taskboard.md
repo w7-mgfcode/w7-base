@@ -144,6 +144,6 @@
 ## Slice 20: Phase 8 - Cross-Zone Dashboards & Local Alerting
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
 |---|---|---|---|---|---|---|---|
-| `W7-20.1` | Create Grafana dashboards for global W7 health | `omg-editor` | W7-18.2, 19.3 | No | `ops` | Dashboard shows cross-zone status | planned |
-| `W7-20.2` | Add local alerting rules for failures/policies | `omg-architect` | W7-20.1 | No | `ops` | Alerts trigger on policy violations | planned |
-| `W7-20.3` | Document observability-driven operations | `omg-editor` | W7-20.2 | No | `shared` | README updated with observability ops | planned |
+| `W7-20.1` | Create Grafana dashboards for global W7 health | `omg-editor` | W7-18.2, 19.3 | No | `ops` | Dashboard shows cross-zone status | verified |
+| `W7-20.2` | Add local alerting rules for failures/policies | `omg-architect` | W7-20.1 | No | `ops` | Alerts trigger on policy violations | verified |
+| `W7-20.3` | Document observability-driven operations | `omg-editor` | W7-20.2 | No | `shared` | README updated with observability ops | verified |

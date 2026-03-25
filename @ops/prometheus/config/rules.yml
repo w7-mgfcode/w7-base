@@ -1,0 +1,20 @@
+groups:
+  - name: w7-alerts
+    rules:
+      - alert: W7SystemUnhealthy
+        expr: w7_healthy == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "W7 System unhealthy"
+          description: "W7 doctor reported errors or warnings."
+
+      - alert: PolicyViolation
+        expr: w7_policy_violation == 1
+        for: 0m
+        labels:
+          severity: error
+        annotations:
+          summary: "Policy violation detected"
+          description: "Stack {{ $labels.zone }}/{{ $labels.stack }} violated policy {{ $labels.policy }}."

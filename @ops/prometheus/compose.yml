@@ -5,6 +5,7 @@ services:
     user: root
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/rules.yml:/etc/prometheus/rules.yml
       - ./data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

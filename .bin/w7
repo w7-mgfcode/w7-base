@@ -3,7 +3,9 @@
 
 set -e
 
-W7_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+if [[ -z "$W7_ROOT" ]]; then
+  W7_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+fi
 W7_GLOBAL_ENV="${W7_ROOT}/.shared/global.env"
 
 # Colors

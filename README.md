@@ -260,3 +260,32 @@ The `act-runner` container is attached to the `w7-ingress` Docker network. This 
 *   **Scaffolded:** The W7 framework provides the `compose.yml`, the `w7-ingress` network attachment, and the `.env.example` template. The `act-runner` container is fully configured to read from these variables.
 *   **Operator Input:** You must manually generate the registration token in the Gitea UI, create the `.env` file, and paste the token. (Tokens cannot be securely pre-provisioned via git).
 
+---
+
+## 📊 Observability & Monitoring
+
+W7-Base provides a built-in observability stack powered by **Prometheus** and **Grafana**, with custom exporters to visualize platform health.
+
+### 1. The Monitoring Stack
+The observability layer is located in the `@ops` zone:
+- **Prometheus** (`@ops/prometheus`): Scrapes metrics from platform services and exporters.
+- **Grafana** (`@ops/grafana`): Provides visualization and alerting.
+- **Node Exporter** (`@ops/node-exporter`): Exposes host-level hardware and OS metrics.
+- **W7 Exporter** (`@ops/w7-exporter`): A custom bridge that transforms `w7 doctor --json` and `w7 stat` data into Prometheus metrics.
+
+### 2. Accessing Dashboards
+If you have local DNS configured, you can access the monitoring tools at:
+- **Prometheus UI:** `http://prom.w7.local`
+- **Grafana Dashboards:** `http://grafana.w7.local` (Default Login: `admin` / `admin`)
+
+### 3. W7 Platform Metrics
+The `w7-exporter` provides the following unique metrics for local orchestration:
+- `w7_healthy`: Global system health (1 = Healthy, 0 = Unhealthy).
+- `w7_error_count` / `w7_warning_count`: Totals from the latest `doctor` run.
+- `w7_containers_up{zone="..."}`: Real-time container counts per deployment zone.
+- `w7_policy_violation{zone="...", stack="...", policy="..."}`: Tracks automated policy enforcement failures.
+
+### 4. Local Alerting
+Prometheus is pre-configured with local alerting rules. Alerts will trigger if:
+- The system remains in an "Unhealthy" state for more than 1 minute.
+- A policy violation (e.g., privileged container in `@prod`) is detected.
