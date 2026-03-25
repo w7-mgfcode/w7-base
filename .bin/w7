@@ -39,6 +39,7 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
 # Global flags
 W7_YES=0
 W7_FORCE=0
+W7_JSON=0
 
 # Simple flag parser
 POSITIONAL_ARGS=()
@@ -50,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force|-f)
       W7_FORCE=1
+      shift
+      ;;
+    --json)
+      W7_JSON=1
       shift
       ;;
     *)
@@ -386,122 +391,201 @@ EOF
     run_compose down -v --remove-orphans
     ;;
   doctor)
-    echo -e "${GREEN}W7-Base System Validation (Doctor)${NC}"
-    echo "================================================="
+    if [[ "$W7_JSON" == "1" ]]; then
+      # JSON reporting mode
+      JSON_FILE=$(mktemp)
+      echo '{"status": "unknown", "errors": [], "warnings": []}' > "$JSON_FILE"
+      
+      add_json() {
+        local type="$1"
+        local msg="$2"
+        # Poor man's JSON append via python or sed (using python if available)
+        if command -v python3 &>/dev/null; then
+          python3 -c "import json, sys; d=json.load(open('$JSON_FILE')); d['$type'].append(sys.argv[1]); json.dump(d, open('$JSON_FILE', 'w'))" "$msg"
+        fi
+      }
+    else
+      echo -e "${GREEN}W7-Base System Validation (Doctor)${NC}"
+      echo "================================================="
+    fi
     
     errors=0
     warnings=0
     
     check_tool() {
       if ! command -v "$1" &> /dev/null; then
-        echo -e "${RED}[ERROR]${NC} Missing required tool: $1"
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "errors" "Missing tool: $1"
+        else
+          echo -e "${RED}[ERROR]${NC} Missing required tool: $1"
+        fi
         errors=$((errors+1))
       else
-        echo -e "${GREEN}[OK]${NC} Tool '$1' is installed."
+        if [[ "$W7_JSON" != "1" ]]; then
+          echo -e "${GREEN}[OK]${NC} Tool '$1' is installed."
+        fi
       fi
     }
     
     check_optional_tool() {
       if ! command -v "$1" &> /dev/null; then
-        echo -e "${YELLOW}[WARN]${NC} Optional tool missing: $1 (Required for secret management)"
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "warnings" "Optional tool missing: $1"
+        else
+          echo -e "${YELLOW}[WARN]${NC} Optional tool missing: $1 (Required for secret management)"
+        fi
         warnings=$((warnings+1))
       else
-        echo -e "${GREEN}[OK]${NC} Optional tool '$1' is installed."
+        if [[ "$W7_JSON" != "1" ]]; then
+          echo -e "${GREEN}[OK]${NC} Optional tool '$1' is installed."
+        fi
       fi
     }
     
-    echo -e "\n${YELLOW}1. Core Dependencies${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}1. Core Dependencies${NC}"; fi
     check_tool "docker"
     check_tool "tar"
     check_tool "bash"
     if docker compose version &> /dev/null; then
-      echo -e "${GREEN}[OK]${NC} Tool 'docker compose' plugin is installed."
+      if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} Tool 'docker compose' plugin is installed."; fi
     else
-      echo -e "${RED}[ERROR]${NC} Missing required tool: docker compose plugin"
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "errors" "Missing tool: docker compose plugin"
+      else
+        echo -e "${RED}[ERROR]${NC} Missing required tool: docker compose plugin"
+      fi
       errors=$((errors+1))
     fi
     check_optional_tool "sops"
     check_optional_tool "age"
     
-    echo -e "\n${YELLOW}2. Directory Structure & Zones${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}2. Directory Structure & Zones${NC}"; fi
     for z in @ops @dev @prod @lab .shared .bin; do
       if [[ -d "${W7_ROOT}/$z" ]]; then
-        echo -e "${GREEN}[OK]${NC} Required directory '$z' exists."
+        if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} Required directory '$z' exists."; fi
       else
-        echo -e "${RED}[ERROR]${NC} Missing required directory: '$z'"
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "errors" "Missing required directory: $z"
+        else
+          echo -e "${RED}[ERROR]${NC} Missing required directory: '$z'"
+        fi
         errors=$((errors+1))
       fi
     done
     
-    echo -e "\n${YELLOW}3. Environment Bridge & Shell Integrations${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}3. Environment Bridge & Shell Integrations${NC}"; fi
     if [[ -f "${W7_ROOT}/.shared/global.env" ]]; then
-      echo -e "${GREEN}[OK]${NC} .shared/global.env exists."
+      if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} .shared/global.env exists."; fi
     else
-      echo -e "${YELLOW}[WARN]${NC} .shared/global.env is missing. Recommended for global variables."
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "warnings" ".shared/global.env is missing"
+      else
+        echo -e "${YELLOW}[WARN]${NC} .shared/global.env is missing. Recommended for global variables."
+      fi
       warnings=$((warnings+1))
     fi
     if [[ -f "${W7_ROOT}/.shared/w7.sh" ]]; then
-      echo -e "${GREEN}[OK]${NC} .shared/w7.sh shell integration exists."
+      if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} .shared/w7.sh shell integration exists."; fi
     else
-      echo -e "${RED}[ERROR]${NC} .shared/w7.sh is missing. 'w7 go' and aliases will fail."
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "errors" ".shared/w7.sh is missing"
+      else
+        echo -e "${RED}[ERROR]${NC} .shared/w7.sh is missing. 'w7 go' and aliases will fail."
+      fi
       errors=$((errors+1))
     fi
     
-    echo -e "\n${YELLOW}4. Secret Management${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}4. Secret Management${NC}"; fi
     if [[ -f "${W7_ROOT}/.gitignore" ]]; then
       if grep -q '\.env' "${W7_ROOT}/.gitignore"; then
-        echo -e "${GREEN}[OK]${NC} .gitignore exists and excludes .env files."
+        if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} .gitignore exists and excludes .env files."; fi
       else
-        echo -e "${YELLOW}[WARN]${NC} .gitignore exists but does not exclude .env files."
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "warnings" ".gitignore does not exclude .env"
+        else
+          echo -e "${YELLOW}[WARN]${NC} .gitignore exists but does not exclude .env files."
+        fi
         warnings=$((warnings+1))
       fi
     else
-      echo -e "${RED}[ERROR]${NC} No .gitignore found. Secrets may be committed accidentally."
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "errors" "No .gitignore found"
+      else
+        echo -e "${RED}[ERROR]${NC} No .gitignore found. Secrets may be committed accidentally."
+      fi
       errors=$((errors+1))
     fi
     if [[ -f "${W7_ROOT}/.sops.yaml" ]]; then
-      echo -e "${GREEN}[OK]${NC} .sops.yaml SOPS configuration exists."
+      if [[ "$W7_JSON" != "1" ]]; then echo -e "${GREEN}[OK]${NC} .sops.yaml SOPS configuration exists."; fi
       if grep -q 'age1xx' "${W7_ROOT}/.sops.yaml"; then
-        echo -e "${YELLOW}[WARN]${NC} .sops.yaml contains placeholder AGE key. Run 'age-keygen' and update .sops.yaml."
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "warnings" ".sops.yaml contains placeholder AGE key"
+        else
+          echo -e "${YELLOW}[WARN]${NC} .sops.yaml contains placeholder AGE key. Run 'age-keygen' and update .sops.yaml."
+        fi
         warnings=$((warnings+1))
       fi
     else
-      echo -e "${YELLOW}[WARN]${NC} .sops.yaml not found. SOPS encryption is not configured."
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "warnings" ".sops.yaml not found"
+      else
+        echo -e "${YELLOW}[WARN]${NC} .sops.yaml not found. SOPS encryption is not configured."
+      fi
       warnings=$((warnings+1))
     fi
 
-    echo -e "\n${YELLOW}5. Stack Contract Validation${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}5. Stack Contract Validation${NC}"; fi
     declare -A stack_names
     for z in @ops @dev @prod @lab; do
       if [[ -d "${W7_ROOT}/$z" ]]; then
         for stack_path in "${W7_ROOT}/$z"/*; do
           if [[ -f "${stack_path}/.w7-meta" ]]; then
             stack=$(basename "$stack_path")
-            echo "Checking stack: $z/$stack"
+            if [[ "$W7_JSON" != "1" ]]; then echo "Checking stack: $z/$stack"; fi
             
             # Duplicate name check
             if [[ -n "${stack_names[$stack]}" ]]; then
-              echo -e "  ${YELLOW}[WARN]${NC} Duplicate stack name '$stack' found in both '$z' and '${stack_names[$stack]}'. w7 resolves explicitly via zone prefix."
+              if [[ "$W7_JSON" == "1" ]]; then
+                add_json "warnings" "Duplicate stack name: $stack in $z and ${stack_names[$stack]}"
+              else
+                echo -e "  ${YELLOW}[WARN]${NC} Duplicate stack name '$stack' found in both '$z' and '${stack_names[$stack]}'. w7 resolves explicitly via zone prefix."
+              fi
               warnings=$((warnings+1))
             fi
             stack_names[$stack]="$z"
             
             # File checks
             if [[ ! -f "${stack_path}/compose.yml" ]]; then
-              echo -e "  ${RED}[ERROR]${NC} Missing compose.yml"
+              if [[ "$W7_JSON" == "1" ]]; then
+                add_json "errors" "$z/$stack missing compose.yml"
+              else
+                echo -e "  ${RED}[ERROR]${NC} Missing compose.yml"
+              fi
               errors=$((errors+1))
             fi
             if [[ ! -d "${stack_path}/data" ]]; then
-              echo -e "  ${YELLOW}[WARN]${NC} Missing data/ directory. Persistent volumes might not be isolated."
+              if [[ "$W7_JSON" == "1" ]]; then
+                add_json "warnings" "$z/$stack missing data/ dir"
+              else
+                echo -e "  ${YELLOW}[WARN]${NC} Missing data/ directory. Persistent volumes might not be isolated."
+              fi
               warnings=$((warnings+1))
             fi
             if [[ ! -f "${stack_path}/.env" && ! -f "${stack_path}/.env.example" && ! -f "${stack_path}/.env.sops" ]]; then
-              echo -e "  ${YELLOW}[WARN]${NC} Neither .env, .env.example, nor .env.sops exists."
+              if [[ "$W7_JSON" == "1" ]]; then
+                add_json "warnings" "$z/$stack no env files"
+              else
+                echo -e "  ${YELLOW}[WARN]${NC} Neither .env, .env.example, nor .env.sops exists."
+              fi
               warnings=$((warnings+1))
             fi
             
             if [[ -f "${stack_path}/.env.sops" && ! -f "${W7_ROOT}/.sops.yaml" && ! -f "${stack_path}/.sops.yaml" ]]; then
-              echo -e "  ${YELLOW}[WARN]${NC} .env.sops found but no .sops.yaml in root or stack."
+              if [[ "$W7_JSON" == "1" ]]; then
+                add_json "warnings" "$z/$stack .env.sops found but no .sops.yaml"
+              else
+                echo -e "  ${YELLOW}[WARN]${NC} .env.sops found but no .sops.yaml in root or stack."
+              fi
               warnings=$((warnings+1))
             fi
 
@@ -518,23 +602,33 @@ EOF
                 fi
               done < "${stack_path}/.env.example"
               if [[ -n "$missing_keys" ]]; then
-                echo -e "  ${YELLOW}[WARN]${NC} .env is missing keys defined in .env.example:${missing_keys}"
+                if [[ "$W7_JSON" == "1" ]]; then
+                  add_json "warnings" "$z/$stack missing env keys: $missing_keys"
+                else
+                  echo -e "  ${YELLOW}[WARN]${NC} .env is missing keys defined in .env.example:${missing_keys}"
+                fi
                 warnings=$((warnings+1))
               fi
             fi
 
             # Compose config validation
-            cd "$stack_path"
-            zone_clean="${z#@}"
-            export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
-            compose_args=()
-            if [[ -f "$W7_GLOBAL_ENV" ]]; then compose_args+=("--env-file" "$W7_GLOBAL_ENV"); fi
-            if [[ -f ".env" ]]; then compose_args+=("--env-file" ".env"); fi
-            
-            if docker compose "${compose_args[@]}" config -q &> /dev/null; then
-               echo -e "  ${GREEN}[OK]${NC} compose config is valid."
+            (
+              cd "$stack_path"
+              zone_clean="${z#@}"
+              export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
+              compose_args=()
+              if [[ -f "$W7_GLOBAL_ENV" ]]; then compose_args+=("--env-file" "$W7_GLOBAL_ENV"); fi
+              if [[ -f ".env" ]]; then compose_args+=("--env-file" ".env"); fi
+              docker compose "${compose_args[@]}" config -q &>/dev/null
+            )
+            if [[ $? -eq 0 ]]; then
+               if [[ "$W7_JSON" != "1" ]]; then echo -e "  ${GREEN}[OK]${NC} compose config is valid."; fi
             else
-               echo -e "  ${RED}[ERROR]${NC} docker compose config validation failed for $z/$stack"
+               if [[ "$W7_JSON" == "1" ]]; then
+                 add_json "errors" "$z/$stack docker compose validation failed"
+               else
+                 echo -e "  ${RED}[ERROR]${NC} docker compose config validation failed for $z/$stack"
+               fi
                errors=$((errors+1))
             fi
           fi
@@ -542,33 +636,45 @@ EOF
       fi
     done
 
-    echo -e "\n${YELLOW}6. GitOps & Pipeline Diagnostics (v2)${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}6. GitOps & Pipeline Diagnostics (v2)${NC}"; fi
     
     # 14.1 Webhook HMAC check
     if [[ -f "${W7_ROOT}/@ops/webhook/.env" ]]; then
       W_SECRET=$(grep '^WEBHOOK_SECRET=' "${W7_ROOT}/@ops/webhook/.env" | cut -d'=' -f2- || true)
       if [[ -z "$W_SECRET" || "$W_SECRET" == "CHANGE_ME_IN_PRODUCTION" ]]; then
-        echo -e "  ${YELLOW}[WARN]${NC} Webhook secret is missing or using default value in @ops/webhook/.env"
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "warnings" "Webhook secret is missing or default"
+        else
+          echo -e "  ${YELLOW}[WARN]${NC} Webhook secret is missing or using default value in @ops/webhook/.env"
+        fi
         warnings=$((warnings+1))
       else
-        echo -e "  ${GREEN}[OK]${NC} Webhook secret is configured."
+        if [[ "$W7_JSON" != "1" ]]; then echo -e "  ${GREEN}[OK]${NC} Webhook secret is configured."; fi
       fi
     fi
 
     # 14.2 act-runner status
     if docker ps --filter "name=act-runner" --format "{{.Status}}" | grep -q "Up"; then
-      echo -e "  ${GREEN}[OK]${NC} act-runner container is running."
+      if [[ "$W7_JSON" != "1" ]]; then echo -e "  ${GREEN}[OK]${NC} act-runner container is running."; fi
     else
-      echo -e "  ${YELLOW}[WARN]${NC} act-runner container is not running."
+      if [[ "$W7_JSON" == "1" ]]; then
+        add_json "warnings" "act-runner is not running"
+      else
+        echo -e "  ${YELLOW}[WARN]${NC} act-runner container is not running."
+      fi
       warnings=$((warnings+1))
     fi
 
     # 14.3 Traefik Ingress Connectivity (Localhost DNS check)
     for domain in git.w7.local logs.w7.local; do
       if grep -q "$domain" /etc/hosts 2>/dev/null; then
-        echo -e "  ${GREEN}[OK]${NC} Ingress domain '$domain' found in /etc/hosts."
+        if [[ "$W7_JSON" != "1" ]]; then echo -e "  ${GREEN}[OK]${NC} Ingress domain '$domain' found in /etc/hosts."; fi
       else
-        echo -e "  ${YELLOW}[WARN]${NC} Ingress domain '$domain' not found in /etc/hosts. Local routing may fail."
+        if [[ "$W7_JSON" == "1" ]]; then
+          add_json "warnings" "Ingress domain '$domain' missing in /etc/hosts"
+        else
+          echo -e "  ${YELLOW}[WARN]${NC} Ingress domain '$domain' not found in /etc/hosts. Local routing may fail."
+        fi
         warnings=$((warnings+1))
       fi
     done
@@ -578,13 +684,17 @@ EOF
       if [[ -d "$stack_path" && -f "${stack_path}/.w7-meta" ]]; then
         stack=$(basename "$stack_path")
         if [[ ! -f "${stack_path}/.env.sops" ]]; then
-          echo -e "  ${YELLOW}[WARN]${NC} Prod stack '@prod/$stack' is not sealed (.env.sops missing)."
+          if [[ "$W7_JSON" == "1" ]]; then
+            add_json "warnings" "Prod stack @prod/$stack is not sealed"
+          else
+            echo -e "  ${YELLOW}[WARN]${NC} Prod stack '@prod/$stack' is not sealed (.env.sops missing)."
+          fi
           warnings=$((warnings+1))
         fi
       fi
     done
 
-    echo -e "\n${YELLOW}7. Policy Compliance${NC}"
+    if [[ "$W7_JSON" != "1" ]]; then echo -e "\n${YELLOW}7. Policy Compliance${NC}"; fi
     for z in @ops @dev @prod @lab; do
       if [[ -d "${W7_ROOT}/$z" ]]; then
         for stack_path in "${W7_ROOT}/$z"/*; do
@@ -599,9 +709,17 @@ EOF
                 # be careful with 'set -e' in the main script.
                 (
                   source "$policy_script"
-                  check_policy "$z" "$stack" "$stack_path"
+                  if [[ "$W7_JSON" == "1" ]]; then
+                    check_policy "$z" "$stack" "$stack_path" >/dev/null
+                  else
+                    check_policy "$z" "$stack" "$stack_path"
+                  fi
                 ) || {
-                  echo -e "  ${RED}[POLICY FAIL]${NC} $z/$stack violated '$(basename "$policy_script")'"
+                  if [[ "$W7_JSON" == "1" ]]; then
+                    add_json "errors" "$z/$stack violated $(basename "$policy_script")"
+                  else
+                    echo -e "  ${RED}[POLICY FAIL]${NC} $z/$stack violated '$(basename "$policy_script")'"
+                  fi
                   errors=$((errors+1))
                 }
               fi
@@ -611,14 +729,21 @@ EOF
       fi
     done
     
-    echo -e "\n================================================="
-    if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
-      echo -e "${GREEN}Doctor found no issues. System is healthy.${NC}"
-    elif [[ $errors -eq 0 ]]; then
-      echo -e "${YELLOW}Doctor completed with 0 errors and $warnings warnings.${NC}"
+    if [[ "$W7_JSON" == "1" ]]; then
+      status="healthy"
+      if [[ $errors -gt 0 ]]; then status="error"; elif [[ $warnings -gt 0 ]]; then status="warning"; fi
+      python3 -c "import json; d=json.load(open('$JSON_FILE')); d['status']='$status'; d['error_count']=$errors; d['warning_count']=$warnings; print(json.dumps(d, indent=2))"
+      rm "$JSON_FILE"
     else
-      echo -e "${RED}Doctor found $errors errors and $warnings warnings. Please fix the errors to ensure stable operation.${NC}"
-      exit 1
+      echo -e "\n================================================="
+      if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
+        echo -e "${GREEN}Doctor found no issues. System is healthy.${NC}"
+      elif [[ $errors -eq 0 ]]; then
+        echo -e "${YELLOW}Doctor completed with 0 errors and $warnings warnings.${NC}"
+      else
+        echo -e "${RED}Doctor found $errors errors and $warnings warnings. Please fix the errors to ensure stable operation.${NC}"
+        exit 1
+      fi
     fi
     ;;
   *)

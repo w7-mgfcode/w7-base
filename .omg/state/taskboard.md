@@ -119,3 +119,10 @@
 | `W7-16.1` | Policy engine discovery & scaffolding | `omg-executor` | None | No | `shared` | `.shared/policy` exists, tool detected | verified |
 | `W7-16.2` | Define "No Privileged @prod" policy | `omg-architect` | W7-16.1 | No | `shared` | Rego/Shell policy defines constraint | verified |
 | `W7-16.3` | Integrate policy audit into `w7 doctor` | `omg-executor` | W7-16.2 | No | `bin` | `doctor` reports policy violations | verified |
+
+## Slice 17: Phase 7 - Advanced Compliance & Reporting
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-17.1` | "No Root Volume Mounts in @prod" policy | `omg-executor` | W7-16.3 | Yes | `shared` | Prevents mounting / or /etc in @prod | verified |
+| `W7-17.2` | "Zone-Aware Ingress naming" policy | `omg-architect` | W7-16.3 | Yes | `shared` | Ensures prod uses standard domains | verified |
+| `W7-17.3` | JSON output for policy violations in `doctor` | `omg-executor` | W7-16.3 | No | `bin` | `doctor --json` prints violations | verified |
