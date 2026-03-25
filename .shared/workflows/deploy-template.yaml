@@ -1,0 +1,25 @@
+name: W7 Deployment Pipeline
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Pre-deploy Validation
+        run: |
+          echo "[INFO] Validating Docker Compose configuration..."
+          docker compose config -q
+      
+      - name: Execute Deployment
+        run: |
+          # Note: The runner has the Docker socket. 
+          # It can interact with the system via standard compose commands.
+          # We assume the W7 environment variables are correctly inherited.
+          echo "[INFO] Triggering w7-style deployment..."
+          docker compose up -d --remove-orphans

@@ -5,16 +5,31 @@ W7-Base uses a local Gitea instance (`@ops/gitea`) to mirror critical external r
 1. Gitea periodically pulls from the upstream remote (Mirror mode).
 2. Upon sync/push, Gitea fires a webhook payload to the local Listener (`@ops/webhook`).
 
-## Webhook Listener & Safe Sequence
-The listener uses `adnanh/webhook` to execute a shell script (`deploy.sh`) upon receiving a valid payload.
+## Hybrid GitOps Model: Webhook vs. Runner
 
-**The Controlled Deploy Flow:**
-1. **Receive & Authenticate:** Validate the `X-Gitea-Signature` using HMAC-SHA256 to ensure the payload is from the trusted Gitea instance.
-2. **Metadata Mapping:** Parse the repository name and branch, then scan `W7_ROOT` for `.w7-meta` files that have matching `git_trigger` definitions.
-3. **Protection Gate (`@prod`):** Any stack living in `@prod` is immediately rejected for automated updates. Production deployments require explicit operator approval (running `w7 up` manually).
-4. **Pull/Update:** `git fetch` and `git reset --hard` the target branch to prevent merge conflicts in the local worktree.
-5. **Pre-Deploy Validation:** Run `docker compose config -q`. If the newly pulled `compose.yml` or `.env` structure is invalid, abort the deployment before taking down the existing containers.
-6. **Redeploy:** Execute `/w7-localbase/.bin/w7 up <zone>/<stack>`.
+W7-Base supports two complementary deployment paths. As of Phase 5, the platform transitions from a purely webhook-driven model to a hybrid foundation.
+
+| Feature | Webhook-Based (`@ops/webhook`) | Runner-Based (Gitea Actions) |
+|---|---|---|
+| **Trigger** | Instant (Webhook Push) | Event-driven (Push, PR, Manual, Schedule) |
+| **Feedback** | Log file only (`w7 logs @ops/webhook`) | Rich UI, step-by-step logs, status checks |
+| **Complexity** | Simple "Pull & Up" sync | Multi-stage (Test, Build, Lint, Deploy) |
+| **@prod Policy** | **Explicitly Blocked** (Safety Gate) | **Allowed with Approvals** (RBAC) |
+| **Trust Boundary** | Local container with Docker socket | Local runner with Docker socket |
+
+### The Handoff Transition
+1. **Low-Trust Sync:** Continue using the Webhook for internal `@dev` and `@lab` stacks where speed of synchronization is prioritized over build complexity.
+2. **High-Integrity Pipeline:** Migrate `@ops` and `@prod` deployments to Gitea Actions. This enables pre-deployment testing and manual approval gates before a production stack is touched.
+
+### RBAC & Safety Boundaries
+- **Runner Scope:** The `act-runner` should be restricted to specific repositories or organizations if multi-tenancy is required. In a local homelab context, the runner is a "Trusted Operator."
+- **Protected Environments:** Use Gitea's "Protected Branches" and "Required Reviews" to gate deployments to the `main` branch of production-linked repositories.
+- **Docker Socket Risk:** Both the webhook and the runner share the same fundamental risk: mounting `/var/run/docker.sock` provides root-level access to the host. Users must never expose the Gitea instance or the Webhook port to the public internet without advanced zero-trust overlays (e.g., Tailscale, Cloudflare Tunnel).
+
+## Implementation Path (Slice 12)
+- **Phase 1:** Document the W7-Base Deployment Action (`deploy.yaml` template).
+- **Phase 2:** Define the `.w7-meta` field `deployment_engine: "webhook" | "action" | "manual"`.
+- **Phase 3:** Gradual migration of `@ops/traefik` and `@ops/gitea` to Action-based updates.
 
 ## Secret Handling Model
 - **Rule:** DO NOT commit secrets to Git.
