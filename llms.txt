@@ -1,0 +1,18 @@
+# W7-Base
+
+> Local-first orchestration and GitOps platform built on Docker Compose and the unified `w7` CLI.
+
+W7-Base standardizes local infrastructure management through a directory-based zone model, providing a seamless transition from development to production with built-in compliance and observability.
+
+## Platform Features
+- **Zone Isolation:** Life-cycle separation across `@ops`, `@dev`, `@prod`, and `@lab`.
+- **Hybrid GitOps:** High-speed webhook synchronization combined with pipeline-driven Gitea Actions.
+- **Security & Compliance:** SOPS/AGE secret sealing, interactive `@prod` gates, and static policy enforcement.
+- **Advanced Observability:** Built-in Prometheus/Grafana stack with custom W7 platform metrics.
+
+## Key Documents
+- [README.md](README.md): Main operator overview and installation guide.
+- [docs/README-LLM.md](docs/README-LLM.md): Concise, LLM-optimized technical usage guide.
+- [docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md): Detailed operational reference and troubleshooting guide.
+- [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md): Core GitOps and deployment engine architecture.
+- [.shared/SECRETS.md](.shared/SECRETS.md): Secret management and SOPS operator guide.
