@@ -1,3 +1,3 @@
 # W7-Base Checkpoint
-- Last Completed: Phase 6 (Production Hardening)
-- Next Objective: Phase 7 - Policy Enforcement & Compliance (OPA/Conftest).
+- Last Completed: Slice 16 (Policy Enforcement Foundations)
+- Next Objective: Slice 17 (Advanced Compliance & Reporting).

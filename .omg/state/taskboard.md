@@ -112,3 +112,10 @@
 | `W7-15.1` | Protected branch / approval documentation | `omg-editor` | None | Yes | `shared` | `GITOPS_DESIGN.md` updated | verified |
 | `W7-15.2` | `w7-preflight` CI action for prod validation | `omg-executor` | W7-14.4 | No | `shared` | Action runs pre-checks before deploy | verified |
 | `W7-15.3` | deploy-template refinement with review gate | `omg-editor` | W7-15.1 | No | `shared` | Template includes `preflight` gate | verified |
+
+## Slice 16: Phase 7 - Policy Enforcement Foundations
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-16.1` | Policy engine discovery & scaffolding | `omg-executor` | None | No | `shared` | `.shared/policy` exists, tool detected | verified |
+| `W7-16.2` | Define "No Privileged @prod" policy | `omg-architect` | W7-16.1 | No | `shared` | Rego/Shell policy defines constraint | verified |
+| `W7-16.3` | Integrate policy audit into `w7 doctor` | `omg-executor` | W7-16.2 | No | `bin` | `doctor` reports policy violations | verified |

@@ -583,6 +583,33 @@ EOF
         fi
       fi
     done
+
+    echo -e "\n${YELLOW}7. Policy Compliance${NC}"
+    for z in @ops @dev @prod @lab; do
+      if [[ -d "${W7_ROOT}/$z" ]]; then
+        for stack_path in "${W7_ROOT}/$z"/*; do
+          if [[ -f "${stack_path}/.w7-meta" ]]; then
+            stack=$(basename "$stack_path")
+            
+            # Run local-first policies from .shared/policy/*.sh
+            for policy_script in "${W7_ROOT}/.shared/policy"/*.sh; do
+              if [[ -f "$policy_script" ]]; then
+                # Source and run the policy's 'check_policy' function
+                # We use a subshell to isolate the policy script but we must 
+                # be careful with 'set -e' in the main script.
+                (
+                  source "$policy_script"
+                  check_policy "$z" "$stack" "$stack_path"
+                ) || {
+                  echo -e "  ${RED}[POLICY FAIL]${NC} $z/$stack violated '$(basename "$policy_script")'"
+                  errors=$((errors+1))
+                }
+              fi
+            done
+          fi
+        done
+      fi
+    done
     
     echo -e "\n================================================="
     if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
