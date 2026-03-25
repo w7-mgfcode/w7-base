@@ -26,6 +26,14 @@ W7-Base supports two complementary deployment paths. As of Phase 5, the platform
 - **Protected Environments:** Use Gitea's "Protected Branches" and "Required Reviews" to gate deployments to the `main` branch of production-linked repositories.
 - **Docker Socket Risk:** Both the webhook and the runner share the same fundamental risk: mounting `/var/run/docker.sock` provides root-level access to the host. Users must never expose the Gitea instance or the Webhook port to the public internet without advanced zero-trust overlays (e.g., Tailscale, Cloudflare Tunnel).
 
+### Approval-Gated CI/CD (Phase 6)
+To formalize the path to production, W7-Base recommends the following Gitea configuration for all `@prod` linked repositories:
+1. **Branch Protection:** Enable for `main`.
+2. **Required Approvals:** Set to at least 1. This prevents a single compromised account (or accidental push) from triggering a production deployment.
+3. **Status Checks:** Enable "Required Status Checks" for the `w7-preflight` job.
+
+This ensures that no code reaches the `main` branch (and thus the production environment) without a peer review and a successful automated system health check.
+
 ## Implementation Path (Slice 12)
 - **Phase 1:** Document the W7-Base Deployment Action (`deploy.yaml` template).
 - **Phase 2:** Define the `.w7-meta` field `deployment_engine: "webhook" | "action" | "manual"`.

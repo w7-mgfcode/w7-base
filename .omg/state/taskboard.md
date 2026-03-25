@@ -109,6 +109,6 @@
 ## Slice 15: Phase 6 - Approval-Gated CI/CD Workflows
 | Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
 |---|---|---|---|---|---|---|---|
-| `W7-15.1` | Protected branch / approval documentation | `omg-editor` | None | Yes | `shared` | `GITOPS_DESIGN.md` updated | planned |
-| `W7-15.2` | `w7-preflight` CI action for prod validation | `omg-executor` | W7-14.4 | No | `shared` | Action runs doctor before deploy | planned |
-| `W7-15.3` | deploy-template refinement with review gate | `omg-editor` | W7-15.1 | No | `shared` | Template checks PR status | planned |
+| `W7-15.1` | Protected branch / approval documentation | `omg-editor` | None | Yes | `shared` | `GITOPS_DESIGN.md` updated | verified |
+| `W7-15.2` | `w7-preflight` CI action for prod validation | `omg-executor` | W7-14.4 | No | `shared` | Action runs pre-checks before deploy | verified |
+| `W7-15.3` | deploy-template refinement with review gate | `omg-editor` | W7-15.1 | No | `shared` | Template includes `preflight` gate | verified |
