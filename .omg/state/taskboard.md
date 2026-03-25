@@ -147,3 +147,11 @@
 | `W7-20.1` | Create Grafana dashboards for global W7 health | `omg-editor` | W7-18.2, 19.3 | No | `ops` | Dashboard shows cross-zone status | verified |
 | `W7-20.2` | Add local alerting rules for failures/policies | `omg-architect` | W7-20.1 | No | `ops` | Alerts trigger on policy violations | verified |
 | `W7-20.3` | Document observability-driven operations | `omg-editor` | W7-20.2 | No | `shared` | README updated with observability ops | verified |
+
+## Slice 21: Final Platform Audit & Completion
+| Task ID | Task | Owner | Dependency | Parallelizable | Worktree | Validation | Status |
+|---|---|---|---|---|---|---|---|
+| `W7-21.1` | Workspace sanitization & cleanup | `omg-executor` | None | Yes | `root` | Helpers removed, git tree clean | verified |
+| `W7-21.2` | Full system health & compliance audit | `omg-verifier` | W7-21.1 | No | `all` | `doctor` passes 100%, stats consistent | planned |
+| `W7-21.3` | Final documentation polish | `omg-editor` | W7-21.2 | Yes | `shared` | README reflect total Phase 1-8 scope | planned |
+| `W7-21.4` | Platform handoff & state freeze | `omg-director` | W7-21.3 | No | `omg` | State files locked as completed | planned |
