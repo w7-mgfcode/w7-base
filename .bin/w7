@@ -142,7 +142,7 @@ setup_env() {
     if [[ ! -f "${stack_path}/.env" ]] || [[ "${stack_path}/.env.sops" -nt "${stack_path}/.env" ]]; then
       if command -v sops &> /dev/null; then
         echo -e "${YELLOW}Auto-decrypting .env.sops to .env...${NC}"
-        if ! sops -d "${stack_path}/.env.sops" > "${stack_path}/.env"; then
+        if ! sops -d --input-type dotenv --output-type dotenv "${stack_path}/.env.sops" > "${stack_path}/.env"; then
           log_error "Failed to decrypt ${stack_path}/.env.sops. Check your AGE key or SOPS config."
           exit 1
         fi
@@ -203,11 +203,11 @@ case "$W7_CMD" in
         echo -e "${GREEN}Creating new .env.sops for stack...${NC}"
         cd "$SPATH"
         if [[ -f ".env" ]]; then
-           sops -e ".env" > ".env.sops"
+           sops -e --input-type dotenv --output-type dotenv ".env" > ".env.sops"
            echo -e "${GREEN}Encrypted existing .env into .env.sops${NC}"
         else
            touch .env.empty
-           sops -e .env.empty > ".env.sops"
+           sops -e --input-type dotenv --output-type dotenv .env.empty > ".env.sops"
            rm .env.empty
            echo -e "${GREEN}Created empty .env.sops${NC}"
         fi
@@ -215,12 +215,12 @@ case "$W7_CMD" in
       edit)
         echo -e "${GREEN}Opening .env.sops in SOPS editor...${NC}"
         cd "$SPATH"
-        sops "${SPATH}/.env.sops"
+        sops --input-type dotenv --output-type dotenv "${SPATH}/.env.sops"
         ;;
       decrypt)
         echo -e "${GREEN}Decrypting .env.sops to .env...${NC}"
         cd "$SPATH"
-        sops -d "${SPATH}/.env.sops" > "${SPATH}/.env"
+        sops -d --input-type dotenv --output-type dotenv "${SPATH}/.env.sops" > "${SPATH}/.env"
         ;;
       *)
         echo "Unknown secret command: $SUBCMD"

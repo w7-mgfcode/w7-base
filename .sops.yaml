@@ -11,8 +11,8 @@
 
 creation_rules:
   # All .env.sops files across every zone use the same operator AGE key
-  - path_regex: \.env\.sops$
-    age: "age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  - path_regex: \.env.*$
+    age: "age1prensljwde9gmqh74h7sfw9cc8pn7w4mn3qs2dpx46sjufjv5u6sgnkh8k"
     # ^^^ Replace with your actual AGE public key from:
     #     age-keygen -o ~/.config/sops/age/keys.txt
     #     The public key is printed to stderr during generation.

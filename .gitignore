@@ -15,3 +15,6 @@ data/
 .omg/state/
 .specstory/
 *.tar.gz
+.age_key.txt
+.bin/age*
+.bin/sops
