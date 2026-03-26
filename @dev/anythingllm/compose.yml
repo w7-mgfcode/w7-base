@@ -1,0 +1,62 @@
+services:
+  anythingllm:
+    image: mintplexlabs/anythingllm:pg
+    container_name: ${COMPOSE_PROJECT_NAME:-dev-anythingllm}-app
+    ports:
+      - "${APP_PORT:-8877}:3001"
+    environment:
+      - SERVER_PORT=3001
+      - STORAGE_DIR=/app/server/storage
+      - DATABASE_URL=postgresql://${PG_USER:-anythingllm}:${PG_PASSWORD:-password}@postgres:5432/${PG_DB:-anythingllm}
+      - VECTOR_DB=qdrant
+      - QDRANT_ENDPOINT=http://qdrant:6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-api-key}
+      - LLM_PROVIDER=gemini
+      - GEMINI_LLM_MODEL_PREF=${ANYTHING_GEMINI_MODEL:-gemini-3.1-pro-preview}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-api-key}
+      - EMBEDDING_ENGINE=gemini
+      - EMBEDDING_MODEL_PREF=${ANYTHING_GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
+      - GEMINI_EMBEDDING_API_KEY=${GEMINI_API_KEY:-api-key}
+    volumes:
+      - ./data/app:/app/server/storage
+    networks:
+      - backend
+      - w7-ingress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=w7-ingress"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-dev-anythingllm}.rule=Host(`${APP_HOSTNAME:-anythingllm.w7.local}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-dev-anythingllm}.entrypoints=web"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-dev-anythingllm}.loadbalancer.server.port=3001"
+    restart: always
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-dev-anythingllm}-pg
+    environment:
+      - POSTGRES_USER=${PG_USER:-anythingllm}
+      - POSTGRES_PASSWORD=${PG_PASSWORD:-password}
+      - POSTGRES_DB=${PG_DB:-anythingllm}
+    volumes:
+      - ./data/pg:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: always
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: ${COMPOSE_PROJECT_NAME:-dev-anythingllm}-qdrant
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-api-key}
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - backend
+    restart: always
+
+networks:
+  backend:
+    internal: true
+  w7-ingress:
+    external: true
+    name: w7-ingress

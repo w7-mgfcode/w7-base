@@ -1,0 +1,8 @@
+version: "1.0"
+description: "AnythingLLM with PostgreSQL and Qdrant integration, using Gemini LLM/embeddings."
+git_trigger:
+  repository: "anythingllm/w7-base"
+  branch: "main"
+health_checks:
+  - type: "http"
+    endpoint: "http://localhost:3001/api/system/check"
