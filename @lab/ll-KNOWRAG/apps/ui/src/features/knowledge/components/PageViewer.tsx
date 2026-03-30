@@ -1,0 +1,34 @@
+import { useState } from 'react'
+import { Page } from '../types'
+import { Copy, Check } from 'lucide-react'
+
+interface PageViewerProps {
+  page: Page
+}
+
+export function PageViewer({ page }: PageViewerProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(page.full_content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="mx-5 mb-4 bg-bg-tertiary rounded-lg border border-border">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+        <div className="flex gap-4 text-xs text-text-secondary">
+          <span>{page.word_count.toLocaleString()} words</span>
+          <span>{page.char_count.toLocaleString()} chars</span>
+        </div>
+        <button onClick={handleCopy} className="text-text-tertiary hover:text-text-primary cursor-pointer">
+          {copied ? <Check size={14} className="text-accent" /> : <Copy size={14} />}
+        </button>
+      </div>
+      <pre className="px-4 py-3 text-xs text-text-primary whitespace-pre-wrap font-mono max-h-[400px] overflow-y-auto leading-relaxed">
+        {page.full_content}
+      </pre>
+    </div>
+  )
+}

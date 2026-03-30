@@ -1,154 +1,177 @@
-import React, { useState } from 'react';
-import { knowledgeService } from '../services/knowledgeService';
+import { useState, useRef } from 'react'
+import { CrawlMode } from '../types'
+import { useStartCrawl, useUploadDocument } from '../hooks/useKnowledgeQueries'
+import { Dialog } from '../../../components/ui/Dialog'
+import { Input } from '../../../components/ui/Input'
+import { Button } from '../../../components/ui/Button'
+import { TagEditor } from './TagEditor'
+import { CrawlModeSelector } from './CrawlModeSelector'
+import { Upload } from 'lucide-react'
 
 interface Props {
-  onClose: () => void;
-  onSuccess: (result?: { crawlId?: string; sourceId?: string }) => void;
+  onClose: () => void
+  onSuccess: (result?: { crawlId?: string; sourceId?: string }) => void
 }
 
-export const AddKnowledgeDialog: React.FC<Props> = ({ onClose, onSuccess }) => {
-  const [mode, setMode] = useState<'crawl' | 'upload'>('crawl');
-  const [url, setUrl] = useState('');
-  const [sourceId, setSourceId] = useState('');
-  const [tags, setTags] = useState('');
-  const [maxDepth, setMaxDepth] = useState(1);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
+  const [tab, setTab] = useState<'crawl' | 'upload'>('crawl')
 
-  const handleCrawlSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  // Crawl state
+  const [url, setUrl] = useState('')
+  const [crawlMode, setCrawlMode] = useState<CrawlMode>('discovery_auto')
+  const [maxDepth, setMaxDepth] = useState(3)
+  const [maxPages, setMaxPages] = useState(100)
+  const [tags, setTags] = useState<string[]>([])
+  const [crawlError, setCrawlError] = useState<string | null>(null)
+  const startCrawl = useStartCrawl()
+
+  // Upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadTags, setUploadTags] = useState<string[]>([])
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const uploadMutation = useUploadDocument()
+
+  const handleCrawl = async () => {
+    if (!url.trim()) return
+    setCrawlError(null)
     try {
-      const result = await knowledgeService.startCrawl(url, sourceId || undefined, maxDepth, tags || undefined);
-      onSuccess({ crawlId: result.crawl_id, sourceId: sourceId || undefined });
-      onClose();
+      const result = await startCrawl.mutateAsync({
+        url,
+        maxDepth: crawlMode === 'recursive' ? maxDepth : undefined,
+        maxPages,
+        tags: tags.length > 0 ? tags : undefined,
+        mode: crawlMode,
+      })
+      onSuccess({ crawlId: result.crawl_id })
+      onClose()
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setCrawlError(err.message)
     }
-  };
+  }
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      setError('Please choose a file to upload');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+  const handleUpload = async () => {
+    if (!selectedFile) return
+    setUploadError(null)
     try {
-      const result = await knowledgeService.uploadDocument(selectedFile, sourceId || undefined, tags || undefined);
-      onSuccess({ sourceId: result.source_id });
-      onClose();
+      const tagStr = uploadTags.join(',')
+      const result = await uploadMutation.mutateAsync({ file: selectedFile, tags: tagStr || undefined })
+      onSuccess({ sourceId: result.source_id })
+      onClose()
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setUploadError(err.message)
     }
-  };
+  }
+
+  const isSubmitting = startCrawl.isPending || uploadMutation.isPending
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '400px' }}>
-        <h2>Add Knowledge</h2>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-          <button
-            type="button"
-            onClick={() => setMode('crawl')}
-            style={{
-              flex: 1,
-              padding: '10px 12px',
-              borderRadius: '6px',
-              border: mode === 'crawl' ? '1px solid #007bff' : '1px solid #ddd',
-              backgroundColor: mode === 'crawl' ? '#eef6ff' : 'white',
-            }}
+    <Dialog
+      open
+      onClose={onClose}
+      title="Add Knowledge"
+      maxWidth="max-w-xl"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+          <Button
+            onClick={tab === 'crawl' ? handleCrawl : handleUpload}
+            disabled={isSubmitting || (tab === 'crawl' ? !url.trim() : !selectedFile)}
           >
-            Crawl URL
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('upload')}
-            style={{
-              flex: 1,
-              padding: '10px 12px',
-              borderRadius: '6px',
-              border: mode === 'upload' ? '1px solid #007bff' : '1px solid #ddd',
-              backgroundColor: mode === 'upload' ? '#eef6ff' : 'white',
-            }}
-          >
-            Upload File
-          </button>
-        </div>
-        <form onSubmit={mode === 'crawl' ? handleCrawlSubmit : handleUploadSubmit}>
-          {mode === 'crawl' && (
-            <>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block' }}>Base URL</label>
-                <input
-                  type="url"
-                  required
-                  style={{ width: '100%', padding: '8px' }}
-                  value={url}
-                  onChange={e => setUrl(e.target.value)}
-                  placeholder="https://docs.example.com"
-                />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block' }}>Crawl Depth</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  style={{ width: '100%', padding: '8px' }}
-                  value={maxDepth}
-                  onChange={e => setMaxDepth(parseInt(e.target.value) || 1)}
-                />
-              </div>
-            </>
-          )}
-          {mode === 'upload' && (
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block' }}>File</label>
-              <input
-                type="file"
-                required
-                onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
-              />
-            </div>
-          )}
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block' }}>Source ID (Optional)</label>
-            <input
-              type="text"
-              style={{ width: '100%', padding: '8px' }}
-              value={sourceId}
-              onChange={e => setSourceId(e.target.value)}
-              placeholder="my-source-slug"
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block' }}>Tags (Optional)</label>
-            <input
-              type="text"
-              style={{ width: '100%', padding: '8px' }}
-              value={tags}
-              onChange={e => setTags(e.target.value)}
-              placeholder="tag1, tag2, tag3"
-            />
-          </div>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-            <button type="button" onClick={onClose} disabled={loading}>Cancel</button>
-            <button type="submit" disabled={loading} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px' }}>
-              {loading ? (mode === 'crawl' ? 'Starting...' : 'Uploading...') : (mode === 'crawl' ? 'Crawl URL' : 'Upload File')}
-            </button>
-          </div>
-        </form>
+            {isSubmitting
+              ? (tab === 'crawl' ? 'Starting...' : 'Uploading...')
+              : (tab === 'crawl' ? 'Start Crawl' : 'Upload')
+            }
+          </Button>
+        </>
+      }
+    >
+      {/* Tab bar */}
+      <div className="flex border-b border-border -mx-6 px-6 mb-4">
+        <button
+          onClick={() => setTab('crawl')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px cursor-pointer ${
+            tab === 'crawl' ? 'text-accent border-accent' : 'text-text-secondary border-transparent'
+          }`}
+        >
+          Crawl Website
+        </button>
+        <button
+          onClick={() => setTab('upload')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px cursor-pointer ${
+            tab === 'upload' ? 'text-accent border-accent' : 'text-text-secondary border-transparent'
+          }`}
+        >
+          Upload Document
+        </button>
       </div>
-    </div>
-  );
-};
+
+      {tab === 'crawl' ? (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">URL</label>
+            <Input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://docs.example.com"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">Crawl Mode</label>
+            <CrawlModeSelector value={crawlMode} onChange={setCrawlMode} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {crawlMode === 'recursive' && (
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Max Depth</label>
+                <Input type="number" min={1} max={10} value={maxDepth} onChange={(e) => setMaxDepth(Number(e.target.value))} />
+              </div>
+            )}
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">Max Pages</label>
+              <Input type="number" min={1} max={500} value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">Tags</label>
+            <TagEditor tags={tags} onChange={setTags} />
+          </div>
+          {crawlError && <p className="text-sm text-error">{crawlError}</p>}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div
+            onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) setSelectedFile(f) }}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragging ? 'border-accent bg-accent-muted' : 'border-border hover:border-border-active'
+            }`}
+          >
+            <Upload size={24} className="mx-auto mb-2 text-text-tertiary" />
+            <p className="text-sm text-text-secondary">
+              {selectedFile ? selectedFile.name : 'Click or drag a file here'}
+            </p>
+            <p className="text-xs text-text-tertiary mt-1">HTML, TXT, MD</p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".html,.txt,.md"
+              className="hidden"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">Tags</label>
+            <TagEditor tags={uploadTags} onChange={setUploadTags} />
+          </div>
+          {uploadError && <p className="text-sm text-error">{uploadError}</p>}
+        </div>
+      )}
+    </Dialog>
+  )
+}

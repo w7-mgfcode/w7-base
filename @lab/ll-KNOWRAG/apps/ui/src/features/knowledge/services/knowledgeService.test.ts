@@ -51,7 +51,7 @@ describe('knowledgeService', () => {
       }),
     );
 
-    await knowledgeService.startCrawl('https://example.com', 'docs', 3, 'api, reference');
+    await knowledgeService.startCrawl('https://example.com', 'docs', 3, ['api', 'reference']);
 
     const call = (fetch as any).mock.calls[0];
     const body = JSON.parse(call[1].body);

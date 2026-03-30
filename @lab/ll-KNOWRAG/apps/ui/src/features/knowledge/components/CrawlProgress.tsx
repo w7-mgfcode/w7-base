@@ -1,89 +1,84 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { knowledgeService } from '../services/knowledgeService';
-import { CrawlProgress as CrawlProgressModel } from '../types';
+import { useEffect, useRef } from 'react'
+import { useCrawlProgress, useStopCrawl } from '../hooks/useKnowledgeQueries'
+import { Button } from '../../../components/ui/Button'
+import { Spinner } from '../../../components/ui/Spinner'
+import { Square } from 'lucide-react'
 
-interface Props {
-  crawlId: string;
-  onComplete?: () => void;
+interface CrawlProgressProps {
+  crawlId: string
+  onComplete: () => void
 }
 
-export const CrawlProgress: React.FC<Props> = ({ crawlId, onComplete }) => {
-  const [progress, setProgress] = useState<CrawlProgressModel | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const notifiedCompleteRef = useRef(false);
+export function CrawlProgress({ crawlId, onComplete }: CrawlProgressProps) {
+  const { data: progress } = useCrawlProgress(crawlId)
+  const stopCrawl = useStopCrawl()
+  const notifiedRef = useRef(false)
+
+  const isTerminal = progress && ['completed', 'failed', 'cancelled'].includes(progress.status)
+  const pct = progress && progress.total_tasks > 0
+    ? Math.round((progress.completed_tasks / progress.total_tasks) * 100)
+    : 0
 
   useEffect(() => {
-    let cancelled = false;
-    let timer: number | undefined;
+    if (isTerminal && !notifiedRef.current) {
+      notifiedRef.current = true
+      const t = setTimeout(onComplete, 3000)
+      return () => clearTimeout(t)
+    }
+  }, [isTerminal, onComplete])
 
-    const poll = async () => {
-      try {
-        const next = await knowledgeService.getCrawlProgress(crawlId);
-        if (cancelled) {
-          return;
-        }
-
-        setProgress(next);
-        setError(null);
-
-        const done = ['completed', 'failed', 'cancelled'].includes(next.status);
-        if (done) {
-          if (next.status === 'completed' && onComplete && !notifiedCompleteRef.current) {
-            notifiedCompleteRef.current = true;
-            onComplete();
-          }
-          return;
-        }
-
-        timer = window.setTimeout(poll, 2000);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch crawl progress');
-          timer = window.setTimeout(poll, 2000);
-        }
-      }
-    };
-
-    setProgress(null);
-    setError(null);
-    notifiedCompleteRef.current = false;
-    poll();
-
-    return () => {
-      cancelled = true;
-      if (timer) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [crawlId, onComplete]);
-
-  if (!crawlId) {
-    return null;
+  if (!progress) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-bg-secondary border-b border-border">
+        <Spinner size={14} />
+        <span className="text-xs text-text-secondary">Loading crawl status...</span>
+      </div>
+    )
   }
 
   return (
-    <section
-      style={{
-        marginBottom: '1.5rem',
-        padding: '1rem',
-        border: '1px solid #d9e7ff',
-        borderRadius: '8px',
-        backgroundColor: '#f6f9ff',
-      }}
-    >
-      <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Crawl Progress</div>
-      <div style={{ fontSize: '14px', marginBottom: '0.25rem' }}>Status: {progress?.status ?? 'loading'}</div>
-      <div style={{ fontSize: '14px', marginBottom: '0.25rem' }}>
-        Tasks: {progress?.completed_tasks ?? 0}/{progress?.total_tasks ?? 0} completed
-      </div>
-      <div style={{ fontSize: '14px', marginBottom: '0.25rem' }}>Failed: {progress?.failed_tasks ?? 0}</div>
-      {progress?.current_task_url && (
-        <div style={{ fontSize: '13px', color: '#555', wordBreak: 'break-word', marginBottom: '0.25rem' }}>
-          Current: {progress.current_task_url}
+    <div className="px-4 py-3 bg-bg-secondary border-b border-border">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {!isTerminal && <Spinner size={14} />}
+          <span className="text-sm font-medium">
+            {isTerminal ? `Crawl ${progress.status}` : 'Crawling...'}
+          </span>
         </div>
+        {!isTerminal && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => stopCrawl.mutate(crawlId)}
+            disabled={stopCrawl.isPending}
+          >
+            <Square size={12} /> Stop
+          </Button>
+        )}
+      </div>
+
+      <div className="w-full h-1.5 bg-bg-tertiary rounded-full overflow-hidden mb-2">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${
+            progress.status === 'failed' ? 'bg-error' :
+            isTerminal ? 'bg-accent' : 'bg-warning'
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-text-secondary">
+        <span>{progress.completed_tasks}/{progress.total_tasks} pages</span>
+        {progress.current_task_url && !isTerminal && (
+          <span className="font-mono truncate max-w-[300px]">{progress.current_task_url}</span>
+        )}
+        {progress.failed_tasks > 0 && (
+          <span className="text-error">Failed: {progress.failed_tasks}</span>
+        )}
+      </div>
+      {progress.error && (
+        <p className="text-xs text-error mt-1">{progress.error}</p>
       )}
-      {progress?.error && <div style={{ color: '#b42318', fontSize: '13px' }}>{progress.error}</div>}
-      {error && <div style={{ color: '#b42318', fontSize: '13px' }}>{error}</div>}
-    </section>
-  );
-};
+    </div>
+  )
+}

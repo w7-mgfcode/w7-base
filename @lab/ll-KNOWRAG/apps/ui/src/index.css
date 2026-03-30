@@ -1,30 +1,58 @@
+@import "tailwindcss";
+
+/* KnowRAG Design Tokens — Emerald Operator */
+@theme {
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #111118;
+  --color-bg-tertiary: #1a1a24;
+  --color-border: #2a2a3a;
+  --color-border-active: #3a3a50;
+  --color-text-primary: #e4e4ed;
+  --color-text-secondary: #8888a0;
+  --color-text-tertiary: #555570;
+  --color-accent: #10b981;
+  --color-accent-hover: #059669;
+  --color-accent-muted: oklch(from #10b981 l c h / 0.12);
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Base resets */
 body {
   margin: 0;
   padding: 0;
-  background-color: #fcfcfc;
-  color: #333;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-button {
-  cursor: pointer;
-  transition: opacity 0.2s;
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-active);
 }
 
-button:hover {
-  opacity: 0.9;
+/* Pulsing animation for active crawl indicator */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not_allowed;
-}
-
-input, select {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-input:focus, select:focus {
-  outline: none;
-  border-color: #007bff;
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }

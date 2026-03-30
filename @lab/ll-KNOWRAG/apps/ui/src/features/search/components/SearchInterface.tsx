@@ -1,96 +1,180 @@
-import React, { useEffect, useState } from 'react';
-import { knowledgeService } from '../../knowledge/services/knowledgeService';
-import { Source, SearchResponse, ChunkSearchResult, PageSearchResult } from '../../knowledge/types';
+import { useState } from 'react'
+import { Source, SearchResponse, ChunkSearchResult, PageSearchResult } from '../../knowledge/types'
+import { useSearchMutation } from '../../knowledge/hooks/useKnowledgeQueries'
+import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
+import { Button } from '../../../components/ui/Button'
+import { Slider } from '../../../components/ui/Slider'
+import { Spinner } from '../../../components/ui/Spinner'
+import { Card } from '../../../components/ui/Card'
+import { Badge } from '../../../components/ui/Badge'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { Search, ExternalLink } from 'lucide-react'
 
-export const SearchInterface: React.FC = () => {
-  const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'chunk' | 'page'>('chunk');
-  const [useHybrid, setUseHybrid] = useState(false);
-  const [useReranking, setUseReranking] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState('');
-  const [sources, setSources] = useState<Source[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<SearchResponse | null>(null);
+interface SearchInterfaceProps {
+  sources?: Source[]
+}
 
-  useEffect(() => {
-    knowledgeService.listSources().then(setSources).catch(() => {});
-  }, []);
+function similarityColor(sim: number): string {
+  if (sim >= 0.8) return 'text-accent'
+  if (sim >= 0.5) return 'text-warning'
+  return 'text-error'
+}
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const res = await knowledgeService.queryKB(query, mode, useHybrid, sourceFilter || undefined, useReranking);
-      setResults(res);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
+  const [query, setQuery] = useState('')
+  const [mode, setMode] = useState<'chunk' | 'page'>('chunk')
+  const [useHybrid, setUseHybrid] = useState(false)
+  const [useReranking, setUseReranking] = useState(false)
+  const [sourceFilter, setSourceFilter] = useState('')
+  const [threshold, setThreshold] = useState(0.0)
+  const [limit, setLimit] = useState(10)
+
+  const searchMutation = useSearchMutation()
+  const results: SearchResponse | undefined = searchMutation.data
+
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!query.trim()) return
+    searchMutation.mutate({
+      query,
+      mode,
+      useHybrid,
+      filterSourceId: sourceFilter || undefined,
+      useReranking,
+      matchThreshold: threshold > 0 ? threshold : undefined,
+      limit,
+    })
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch()
+  }
 
   return (
-    <div style={{ marginTop: '2rem', borderTop: '1px solid #eee', paddingTop: '2rem' }}>
-      <h2>Query Knowledge Base</h2>
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Ask a question..."
-          style={{ flex: 1, padding: '12px', fontSize: '16px', minWidth: '200px' }}
-        />
-        <select value={mode} onChange={e => setMode(e.target.value as any)} style={{ padding: '8px' }}>
-          <option value="chunk">Chunk Mode</option>
-          <option value="page">Page Mode</option>
-        </select>
-        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} style={{ padding: '8px' }}>
-          <option value="">All Sources</option>
-          {sources.map(s => (
-            <option key={s.source_id} value={s.source_id}>
-              {s.source_display_name || s.source_id}
-            </option>
-          ))}
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
-          <input type="checkbox" checked={useHybrid} onChange={e => setUseHybrid(e.target.checked)} />
-          Hybrid
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
-          <input type="checkbox" checked={useReranking} onChange={e => setUseReranking(e.target.checked)} />
-          Reranking
-        </label>
-        <button type="submit" disabled={loading} style={{ padding: '8px 24px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
-          {loading ? 'Searching...' : 'Search'}
-        </button>
-      </form>
+    <div className="flex flex-col h-full overflow-y-auto">
+      {/* Search input */}
+      <div className="p-4 border-b border-border">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search your knowledge base..."
+            className="pl-9 text-base"
+          />
+        </div>
+      </div>
 
-      {results && (
-        <div>
-          <p style={{ color: '#666' }}>Found {results.total_results} results in {results.processing_time_ms.toFixed(1)}ms</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {results.mode === 'chunk' ? (
-              (results.results as ChunkSearchResult[]).map((res, i) => (
-                <div key={i} style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
-                  <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '14px', color: '#007bff' }}>{res.source_id} ({(res.similarity * 100).toFixed(1)}%)</div>
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{res.content}</div>
-                </div>
-              ))
-            ) : (
-              (results.results as PageSearchResult[]).map((res, i) => (
-                <div key={i} style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{res.title || res.url}</div>
-                  <div style={{ color: '#666', fontSize: '12px', marginBottom: '8px' }}>{res.source_id} | Max Sim: {(res.max_similarity * 100).toFixed(1)}%</div>
-                  <div style={{ fontStyle: 'italic', backgroundColor: '#f9f9f9', padding: '8px' }}>
-                    {res.chunks[0]?.content.substring(0, 300)}...
-                  </div>
-                </div>
-              ))
-            )}
+      {/* Controls */}
+      <div className="px-4 py-3 border-b border-border space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={mode} onChange={(e) => setMode(e.target.value as 'chunk' | 'page')} className="w-28 text-xs">
+            <option value="chunk">Chunk</option>
+            <option value="page">Page</option>
+          </Select>
+          <Select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-40 text-xs">
+            <option value="">All Sources</option>
+            {sources.map((s) => (
+              <option key={s.source_id} value={s.source_id}>
+                {s.source_display_name || s.source_id}
+              </option>
+            ))}
+          </Select>
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+            <input type="checkbox" checked={useHybrid} onChange={(e) => setUseHybrid(e.target.checked)}
+              className="accent-accent" />
+            Hybrid
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+            <input type="checkbox" checked={useReranking} onChange={(e) => setUseReranking(e.target.checked)}
+              className="accent-accent" />
+            Rerank
+          </label>
+          <Button onClick={() => handleSearch()} disabled={searchMutation.isPending || !query.trim()} size="sm">
+            {searchMutation.isPending ? <Spinner size={14} /> : 'Go'}
+          </Button>
+        </div>
+        <div className="flex items-center gap-4">
+          <Slider
+            label="Threshold"
+            min={0}
+            max={1}
+            step={0.05}
+            value={threshold}
+            onChange={(e) => setThreshold(parseFloat(e.target.value))}
+            displayValue={threshold.toFixed(2)}
+            className="flex-1"
+          />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-text-secondary">Limit</span>
+            <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="w-16 text-xs">
+              {[5, 10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+            </Select>
           </div>
         </div>
+      </div>
+
+      {/* Search Error */}
+      {searchMutation.isError && (
+        <div className="px-4 pt-3">
+          <p className="text-sm text-error">Search failed. Check that the API is running and try again.</p>
+        </div>
       )}
+
+      {/* Results */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {results && (
+          <>
+            <p className="text-xs text-text-secondary mb-3">
+              {results.total_results} result{results.total_results !== 1 ? 's' : ''} in {results.processing_time_ms.toFixed(0)}ms
+              {results.reranking_applied && <Badge variant="accent" className="ml-2">reranked</Badge>}
+            </p>
+            <div className="space-y-2">
+              {results.mode === 'chunk' ? (
+                (results.results as ChunkSearchResult[]).map((r, i) => (
+                  <Card key={i} className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-bold ${similarityColor(r.similarity)}`}>
+                        {(r.similarity * 100).toFixed(1)}%
+                      </span>
+                      <span className="text-xs text-text-secondary">{r.source_id}</span>
+                    </div>
+                    <p className="text-sm text-text-primary line-clamp-3 mb-1">{r.content}</p>
+                    {r.contextual_content && (
+                      <p className="text-xs text-text-tertiary line-clamp-1">{r.contextual_content}</p>
+                    )}
+                  </Card>
+                ))
+              ) : (
+                (results.results as PageSearchResult[]).map((r, i) => (
+                  <Card key={i} className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-bold ${similarityColor(r.max_similarity)}`}>
+                        {(r.max_similarity * 100).toFixed(1)}%
+                      </span>
+                      <span className="text-xs text-text-secondary">{r.chunk_count} chunks</span>
+                    </div>
+                    <p className="text-sm font-medium mb-0.5">{r.title || r.url}</p>
+                    <p className="text-xs text-text-secondary font-mono mb-2">{r.url}</p>
+                    {r.chunks[0] && (
+                      <p className="text-xs text-text-tertiary line-clamp-2">{r.chunks[0].content}</p>
+                    )}
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
+        {!results && !searchMutation.isPending && (
+          <EmptyState
+            icon={<Search size={40} />}
+            title="Search your knowledge base"
+            description="Enter a query above to find relevant content across all your sources."
+          />
+        )}
+      </div>
     </div>
-  );
-};
+  )
+}

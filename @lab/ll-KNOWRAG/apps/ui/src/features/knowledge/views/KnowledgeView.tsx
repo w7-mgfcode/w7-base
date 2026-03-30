@@ -1,189 +1,160 @@
-import React, { useEffect, useState } from 'react';
-import { Source, Page } from '../types';
-import { knowledgeService } from '../services/knowledgeService';
-import { AddKnowledgeDialog } from '../components/AddKnowledgeDialog';
-import { CrawlProgress } from '../components/CrawlProgress';
-import { SearchInterface } from '../../search/components/SearchInterface';
+import { useState, useCallback, useEffect } from 'react'
+import { Source } from '../types'
+import { useSources, useDeleteSource, useRefreshSource } from '../hooks/useKnowledgeQueries'
+import { KBStatsBar } from '../components/KBStatsBar'
+import { SourceList } from '../components/SourceList'
+import { SourceDetail } from '../components/SourceDetail'
+import { AddKnowledgeDialog } from '../components/AddKnowledgeDialog'
+import { SearchInterface } from '../../search/components/SearchInterface'
+import { Button } from '../../../components/ui/Button'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { Plus, Search as SearchIcon } from 'lucide-react'
 
-export const KnowledgeView: React.FC = () => {
-  const [sources, setSources] = useState<Source[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<string | null>(null);
-  const [pages, setPages] = useState<Page[]>([]);
-  const [activeCrawlId, setActiveCrawlId] = useState<string | null>(null);
-  const [deletingSourceId, setDeletingSourceId] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+export function KnowledgeView() {
+  const [selectedSource, setSelectedSource] = useState<Source | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const [searchMode, setSearchMode] = useState(false)
+  const [activeCrawlIds, setActiveCrawlIds] = useState<string[]>([])
+  const [deletingSourceId, setDeletingSourceId] = useState<string | null>(null)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
 
-  const loadSources = async () => {
-    setLoading(true);
-    try {
-      const data = await knowledgeService.listSources();
-      setSources(data);
-      setLoadError(null);
-    } catch (err) {
-      console.error(err);
-      setLoadError('Failed to load sources');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: sources = [], isLoading, isError } = useSources()
 
-  const loadPages = async (sourceId: string) => {
-    try {
-      const data = await knowledgeService.listPages(sourceId);
-      setPages(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteSource = async (sourceId: string) => {
-    const confirmed = window.confirm(`Delete source "${sourceId}"?`);
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingSourceId(sourceId);
-    try {
-      await knowledgeService.deleteSource(sourceId);
-      if (selectedSource === sourceId) {
-        setSelectedSource(null);
-        setPages([]);
+  // Ctrl+K to toggle search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchMode((prev) => !prev)
       }
-      await loadSources();
-    } catch (err) {
-      console.error(err);
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+  const deleteMutation = useDeleteSource()
+  const refreshMutation = useRefreshSource()
+
+  const handleDelete = useCallback(async (sourceId: string) => {
+    if (!window.confirm(`Delete source "${sourceId}"?`)) return
+    setDeletingSourceId(sourceId)
+    try {
+      await deleteMutation.mutateAsync(sourceId)
+      if (selectedSource?.source_id === sourceId) setSelectedSource(null)
     } finally {
-      setDeletingSourceId(null);
+      setDeletingSourceId(null)
     }
-  };
+  }, [deleteMutation, selectedSource])
 
-  useEffect(() => {
-    loadSources();
-  }, []);
-
-  useEffect(() => {
-    if (selectedSource) {
-      loadPages(selectedSource);
-    } else {
-      setPages([]);
+  const handleRefresh = useCallback(async (sourceId: string) => {
+    setRefreshError(null)
+    try {
+      const result = await refreshMutation.mutateAsync(sourceId)
+      setActiveCrawlIds((prev) => [...prev, result.crawl_id])
+    } catch (err: any) {
+      setRefreshError(err.message || 'Refresh failed')
     }
-  }, [selectedSource]);
+  }, [refreshMutation])
+
+  const handleCrawlComplete = useCallback((crawlId: string) => {
+    setActiveCrawlIds((prev) => prev.filter((id) => id !== crawlId))
+  }, [])
+
+  const isEmpty = !isLoading && sources.length === 0
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>KnowRAG Operator Console</h1>
-        <button 
-          onClick={() => setShowAdd(true)}
-          style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          Add Knowledge
-        </button>
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 h-14 border-b border-border bg-bg-primary shrink-0">
+        <h1 className="text-lg font-semibold tracking-tight">KnowRAG</h1>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowAdd(true)} size="sm">
+            <Plus size={16} /> Add Knowledge
+          </Button>
+          <Button
+            variant={searchMode ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setSearchMode(!searchMode)}
+          >
+            <SearchIcon size={16} /> Search
+          </Button>
+        </div>
       </header>
 
-      {activeCrawlId && (
-        <CrawlProgress
-          crawlId={activeCrawlId}
-          onComplete={() => {
-            loadSources();
-          }}
-        />
+      {/* Stats Bar */}
+      <KBStatsBar activeCrawlCount={activeCrawlIds.length} />
+
+      {/* Refresh Error */}
+      {refreshError && (
+        <div className="px-6 py-2 bg-error/10 border-b border-error/20">
+          <p className="text-sm text-error">Refresh failed: {refreshError}</p>
+        </div>
       )}
 
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Available Sources</h2>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ padding: '6px 10px' }}>
-            <option value="all">All Types</option>
-            <option value="crawled">Crawled</option>
-            <option value="uploaded">Uploaded</option>
-          </select>
+      {/* Main Content */}
+      {isError ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            title="Failed to load sources"
+            description="Could not connect to the API. Check that the backend is running."
+          />
         </div>
-        {loading ? <p>Loading sources...</p> : loadError ? (
-          <div style={{ padding: '1rem', border: '1px solid #f0b3b3', borderRadius: '8px', backgroundColor: '#fff5f5' }}>
-            <p style={{ marginTop: 0, color: '#b42318' }}>{loadError}</p>
-            <button onClick={loadSources} style={{ padding: '8px 14px' }}>Retry</button>
+      ) : isEmpty ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            title="Your knowledge base is empty"
+            description="Add your first source to start building your knowledge base. Crawl a website or upload a document."
+            action={<Button onClick={() => setShowAdd(true)}>+ Add Knowledge</Button>}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Panel — Source List */}
+          <div className="w-[380px] shrink-0 border-r border-border flex flex-col max-lg:w-full max-lg:hidden max-lg:data-[visible=true]:flex"
+               data-visible={!selectedSource || undefined}>
+            <SourceList
+              sources={sources}
+              isLoading={isLoading}
+              selectedSourceId={selectedSource?.source_id ?? null}
+              deletingSourceId={deletingSourceId}
+              onSelect={setSelectedSource}
+              onRefresh={handleRefresh}
+              onDelete={handleDelete}
+              onAddKnowledge={() => setShowAdd(true)}
+            />
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-            {sources.filter(s => {
-              if (typeFilter === 'uploaded') return s.metadata?.upload === true;
-              if (typeFilter === 'crawled') return !s.metadata?.upload;
-              return true;
-            }).map(s => (
-              <div 
-                key={s.source_id} 
-                onClick={() => setSelectedSource(s.source_id)}
-                style={{ 
-                  padding: '1rem', 
-                  border: '1px solid #ddd', 
-                  borderRadius: '8px', 
-                  cursor: 'pointer',
-                  backgroundColor: selectedSource === s.source_id ? '#eef6ff' : 'white',
-                  borderColor: selectedSource === s.source_id ? '#007bff' : '#ddd'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ fontWeight: 'bold' }}>{s.source_display_name || s.source_id}</div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSource(s.source_id);
-                    }}
-                    disabled={deletingSourceId === s.source_id}
-                    style={{
-                      border: '1px solid #f0b3b3',
-                      backgroundColor: 'white',
-                      color: '#b42318',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {deletingSourceId === s.source_id ? 'Deleting...' : 'Delete'}
-                  </button>
-                </div>
-                <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.source_url}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
-      {selectedSource && (
-        <section style={{ marginTop: '2rem' }}>
-          <h3>Pages in {selectedSource}</h3>
-          <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #eee', padding: '1rem' }}>
-            {pages.length === 0 ? <p>No pages found.</p> : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {pages.map(p => (
-                  <li key={p.id} style={{ padding: '8px 0', borderBottom: '1px solid #f5f5f5', fontSize: '14px' }}>
-                    {p.section_title || p.url}
-                  </li>
-                ))}
-              </ul>
+          {/* Right Panel */}
+          <div className="flex-1 overflow-hidden flex flex-col max-lg:w-full">
+            {searchMode ? (
+              <SearchInterface sources={sources} />
+            ) : selectedSource ? (
+              <SourceDetail
+                source={selectedSource}
+                activeCrawlIds={activeCrawlIds}
+                onCrawlComplete={handleCrawlComplete}
+                onRefresh={handleRefresh}
+                onBack={() => setSelectedSource(null)}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-text-tertiary text-sm">Select a source to view details</p>
+              </div>
             )}
           </div>
-        </section>
+        </div>
       )}
 
-      <SearchInterface />
-
+      {/* Add Knowledge Dialog */}
       {showAdd && (
         <AddKnowledgeDialog
           onClose={() => setShowAdd(false)}
           onSuccess={(result) => {
             if (result?.crawlId) {
-              setActiveCrawlId(result.crawlId);
+              setActiveCrawlIds((prev) => [...prev, result.crawlId!])
             }
-            loadSources();
           }}
         />
       )}
     </div>
-  );
-};
+  )
+}

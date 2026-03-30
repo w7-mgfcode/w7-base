@@ -22,11 +22,26 @@ export interface Page {
   created_at: string;
 }
 
+export interface Chunk {
+  id: number;
+  source_id: string;
+  page_id?: string;
+  url: string;
+  chunk_number: number;
+  content: string;
+  contextual_content?: string;
+  metadata: Record<string, any>;
+  embedding_model?: string;
+  embedding_dimension?: number;
+  created_at: string;
+}
+
 export interface ChunkSearchResult {
   id: number;
   source_id: string;
   page_id?: string;
   content: string;
+  contextual_content?: string;
   metadata: Record<string, any>;
   similarity: number;
   url?: string;
@@ -49,6 +64,7 @@ export interface SearchResponse {
   results: ChunkSearchResult[] | PageSearchResult[];
   total_results: number;
   processing_time_ms: number;
+  reranking_applied?: boolean;
 }
 
 export interface CrawlProgress {
@@ -61,3 +77,25 @@ export interface CrawlProgress {
   results: Record<string, any>[];
   error?: string | null;
 }
+
+export interface KBSummary {
+  total_sources: number;
+  total_pages: number;
+  total_chunks: number;
+}
+
+export interface ChunkListResponse {
+  source_id: string;
+  total: number;
+  offset: number;
+  limit: number;
+  items: Chunk[];
+}
+
+export interface SourceUpdateRequest {
+  title?: string;
+  display_name?: string;
+  tags?: string[];
+}
+
+export type CrawlMode = 'single_page' | 'sitemap' | 'recursive' | 'discovery_auto';
