@@ -27,13 +27,14 @@ class KnowRagApiClient:
             response.raise_for_status()
             return response.json()
 
-    async def search_kb(self, query: str, mode: str = "chunk", limit: int = 10, use_hybrid: bool = False) -> Dict[str, Any]:
+    async def search_kb(self, query: str, mode: str = "chunk", limit: int = 10, use_hybrid: bool = False, use_reranking: bool = False) -> Dict[str, Any]:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             payload = {
                 "query": query,
                 "mode": mode,
                 "limit": limit,
-                "use_hybrid": use_hybrid
+                "use_hybrid": use_hybrid,
+                "use_reranking": use_reranking
             }
             response = await client.post(f"{self.base_url}/api/rag/query", json=payload)
             response.raise_for_status()

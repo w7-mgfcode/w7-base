@@ -22,6 +22,7 @@ class ChunkSearchResult(BaseModel):
     source_id: str
     page_id: Optional[uuid.UUID] = None
     content: str
+    contextual_content: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     similarity: float
     url: Optional[str] = None

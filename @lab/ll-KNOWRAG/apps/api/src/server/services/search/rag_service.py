@@ -6,6 +6,7 @@ import uuid
 from server.services.search.base_search_strategy import BaseSearchStrategy
 from server.services.search.vector_search_strategy import VectorSearchStrategy
 from server.services.search.hybrid_search_strategy import HybridSearchStrategy
+from server.services.search.reranker import RerankingService
 from server.services.embeddings.embedding_service import EmbeddingService
 from server.models.search import (
     SearchRequest, SearchResponse, SearchMode, 
@@ -24,23 +25,18 @@ class RagService:
         self, 
         embedding_service: EmbeddingService,
         vector_strategy: VectorSearchStrategy,
-        hybrid_strategy: Optional[HybridSearchStrategy] = None
+        hybrid_strategy: Optional[HybridSearchStrategy] = None,
+        reranking_service: Optional[RerankingService] = None
     ):
         self.embedding_service = embedding_service
         self.vector_strategy = vector_strategy
         self.hybrid_strategy = hybrid_strategy
+        self.reranking_service = reranking_service
 
     async def query(self, request: SearchRequest) -> SearchResponse:
         start_time = time.time()
         
         # 1. Embed query
-        # We wrap query in a dummy ChunkCreate-like object if needed or just use a helper
-        # Since EmbeddingService.embed_chunks takes List[ChunkCreate], 
-        # let's assume it has or we add a direct embed_text method
-        # For now, let's just use its provider directly or a mocked call
-        
-        # Actually, let's assume EmbeddingService has a method 'get_query_embedding'
-        # if not, we use the provider.
         query_embedding = await self.embedding_service.provider.get_embeddings(
             self.embedding_service.model, [request.query]
         )
@@ -54,6 +50,10 @@ class RagService:
         # 3. Execute search
         chunks = await strategy.search(request, embedding)
         
+        # 3.1. Reranking (Slice 6.1)
+        if request.use_reranking and self.reranking_service:
+            chunks = await self.reranking_service.rerank(request.query, chunks)
+            
         # 4. Process results by mode
         results = chunks
         if request.mode == SearchMode.PAGE:
@@ -85,8 +85,6 @@ class RagService:
                 
         page_results = []
         for pid, p_chunks in page_map.items():
-            # In a real port, we'd fetch page metadata (url, title) from DB here
-            # For v1, we extract what we can from chunk metadata or return skeleton
             first_chunk = p_chunks[0]
             max_sim = max(c.similarity for c in p_chunks)
             

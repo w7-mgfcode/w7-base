@@ -44,6 +44,7 @@ class ChunkBase(BaseModel):
     url: str
     chunk_number: int
     content: str
+    contextual_content: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     embedding_model: Optional[str] = None
     embedding_dimension: Optional[int] = 768

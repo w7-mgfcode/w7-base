@@ -6,6 +6,7 @@ export const SearchInterface: React.FC = () => {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'chunk' | 'page'>('chunk');
   const [useHybrid, setUseHybrid] = useState(false);
+  const [useReranking, setUseReranking] = useState(false);
   const [sourceFilter, setSourceFilter] = useState('');
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ export const SearchInterface: React.FC = () => {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const res = await knowledgeService.queryKB(query, mode, useHybrid, sourceFilter || undefined);
+      const res = await knowledgeService.queryKB(query, mode, useHybrid, sourceFilter || undefined, useReranking);
       setResults(res);
     } catch (err) {
       console.error(err);
@@ -55,6 +56,10 @@ export const SearchInterface: React.FC = () => {
         <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
           <input type="checkbox" checked={useHybrid} onChange={e => setUseHybrid(e.target.checked)} />
           Hybrid
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
+          <input type="checkbox" checked={useReranking} onChange={e => setUseReranking(e.target.checked)} />
+          Reranking
         </label>
         <button type="submit" disabled={loading} style={{ padding: '8px 24px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
           {loading ? 'Searching...' : 'Search'}

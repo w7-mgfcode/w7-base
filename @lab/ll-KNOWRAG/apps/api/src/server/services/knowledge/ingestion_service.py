@@ -15,9 +15,11 @@ class IngestionService:
     Integrated with EmbeddingService.
     """
     
-    def __init__(self, storage_ops: StorageOperations, embedding_service: Optional[EmbeddingService] = None):
+    def __init__(self, storage_ops: StorageOperations, embedding_service: Optional[EmbeddingService] = None, use_contextual: bool = False, chat_model: str = "llama3"):
         self.storage_ops = storage_ops
         self.embedding_service = embedding_service
+        self.use_contextual = use_contextual
+        self.chat_model = chat_model
 
     async def ingest_crawl_results(self, source_id: str, crawl_results: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
         """
@@ -54,6 +56,18 @@ class IngestionService:
             # 3. Create Chunks (Blueprint Section 10)
             chunks = self._chunk_content(content, source_id, stored_page.id, url)
             
+            # 3.5 Contextual Embeddings Pass
+            if self.use_contextual and self.embedding_service and chunks:
+                try:
+                    for chunk in chunks:
+                        prompt = f"Document Title/URL: {url}\n\nDocument Content:\n{content[:4000]}\n\nChunk:\n{chunk.content}\n\nPlease write a concise 1-2 sentence context to situate this chunk within the overall document."
+                        context = await self.embedding_service.provider.generate_text(self.chat_model, prompt)
+                        if context:
+                            chunk.contextual_content = f"Context: {context}\n\nChunk: {chunk.content}"
+                            chunk.llm_chat_model = self.chat_model
+                except Exception as e:
+                    logger.error(f"Failed to generate context for chunks: {str(e)}")
+
             # 4. Generate Embeddings if service is provided
             if self.embedding_service and chunks:
                 try:

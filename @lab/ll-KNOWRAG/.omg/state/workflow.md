@@ -1,8 +1,10 @@
 # ll-KNOWRAG Workflow
 
 - **Mode**: autopilot
-- **Current Step**: Final Stabilization Complete
-- **Acceptance Criteria (Stabilization)**:
-    - [x] RemoteProtocolError resolved via PostgREST stack + Nginx proxy.
-    - [x] E2E Crawl -> Ingestion -> Search loop verified.
-    - [x] Dependencies pinned in requirements.txt.
+- **Cycle**: 4
+- **Current Step**: Done
+- **Acceptance Criteria (Phase 6)**:
+    - [x] Reranking logic implemented and config-gated.
+    - [x] Reranking UI & MCP exposure.
+    - [x] Contextual embedding logic (ingestion pass).
+    - [x] Full E2E verification of advanced retrieval.

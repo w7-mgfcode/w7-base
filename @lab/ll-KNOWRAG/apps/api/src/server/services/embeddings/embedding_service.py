@@ -26,7 +26,7 @@ class EmbeddingService:
             return []
 
         # Extract content for embedding
-        texts = [chunk.content for chunk in chunks]
+        texts = [chunk.contextual_content if chunk.contextual_content else chunk.content for chunk in chunks]
         
         all_embeddings = []
         for i in range(0, len(texts), self.batch_size):

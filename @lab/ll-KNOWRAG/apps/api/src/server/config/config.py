@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     embedding_provider_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
     embedding_model: str = "nomic-embed-text"
     embedding_dimension: int = 768
+    chat_model: str = "llama3"
     api_host: str = "0.0.0.0"
     api_port: int = 8181
 

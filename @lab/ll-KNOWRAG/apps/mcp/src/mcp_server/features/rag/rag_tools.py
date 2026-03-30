@@ -53,13 +53,15 @@ def register_rag_tools(mcp: FastMCP, client: KnowRagApiClient):
             return f"Error listing sources: {str(e)}"
 
     @mcp.tool()
-    async def rag_search_knowledge_base(query: str, mode: str = "chunk", limit: int = 5) -> str:
+    async def rag_search_knowledge_base(query: str, mode: str = "chunk", limit: int = 5, use_hybrid: bool = False, use_reranking: bool = False) -> str:
         """
         Search the knowledge base for relevant information.
         - mode: 'chunk' for semantic snippets, 'page' for grouped documents.
+        - use_hybrid: Use hybrid search (vector + keyword).
+        - use_reranking: Use second-pass reranking for better results.
         """
         try:
-            results = await client.search_kb(query, mode=mode, limit=limit)
+            results = await client.search_kb(query, mode=mode, limit=limit, use_hybrid=use_hybrid, use_reranking=use_reranking)
 
             if not results['results']:
                 return f"No results found for query: {query}"

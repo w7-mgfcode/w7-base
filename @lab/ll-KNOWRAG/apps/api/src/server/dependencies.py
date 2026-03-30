@@ -9,6 +9,7 @@ from server.services.embeddings.llm_provider_service import LLMProviderService
 from server.services.embeddings.embedding_service import EmbeddingService
 from server.services.search.vector_search_strategy import VectorSearchStrategy
 from server.services.search.hybrid_search_strategy import HybridSearchStrategy
+from server.services.search.reranker import RerankingService
 from server.services.search.rag_service import RagService
 
 # Global instances (initialized once)
@@ -18,11 +19,12 @@ crawler_mgr = CrawlerManager()
 storage_ops = StorageOperations(supabase)
 provider_svc = LLMProviderService(settings.embedding_provider_url)
 embedding_svc = EmbeddingService(provider_svc, settings.embedding_model, settings.embedding_dimension)
-ingestion_svc = IngestionService(storage_ops, embedding_svc)
+ingestion_svc = IngestionService(storage_ops, embedding_svc, settings.use_contextual_embeddings, settings.chat_model)
 crawling_svc = CrawlingService(discovery_svc, crawler_mgr, ingestion_svc)
 vector_strategy = VectorSearchStrategy(supabase)
-hybrid_strategy = HybridSearchStrategy(supabase)
-rag_svc = RagService(embedding_svc, vector_strategy, hybrid_strategy)
+hybrid_strategy = HybridSearchStrategy(supabase) if settings.use_hybrid_search else None
+reranking_svc = RerankingService() if settings.use_reranking else None
+rag_svc = RagService(embedding_svc, vector_strategy, hybrid_strategy, reranking_svc)
 
 # Factory functions for dependency injection
 def get_storage_ops() -> StorageOperations:

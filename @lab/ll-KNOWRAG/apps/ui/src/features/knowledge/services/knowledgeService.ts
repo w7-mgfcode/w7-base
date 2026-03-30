@@ -48,8 +48,8 @@ export const knowledgeService = {
     return res.json();
   },
 
-  async queryKB(query: string, mode: 'chunk' | 'page' = 'chunk', useHybrid = false, filterSourceId?: string): Promise<SearchResponse> {
-    const body: Record<string, any> = { query, mode, use_hybrid: useHybrid };
+  async queryKB(query: string, mode: 'chunk' | 'page' = 'chunk', useHybrid = false, filterSourceId?: string, useReranking = false): Promise<SearchResponse> {
+    const body: Record<string, any> = { query, mode, use_hybrid: useHybrid, use_reranking: useReranking };
     if (filterSourceId) body.filter_source_id = filterSourceId;
     const res = await fetch(`${API_BASE}/api/rag/query`, {
       method: 'POST',

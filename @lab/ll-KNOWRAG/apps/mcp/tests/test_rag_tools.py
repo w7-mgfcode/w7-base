@@ -60,7 +60,7 @@ def test_rag_search_knowledge_base_chunk_mode():
     text = _call(mcp, "rag_search_knowledge_base", {"query": "greeting", "mode": "chunk", "limit": 3})
     assert "hello world" in text
     assert "test-src" in text
-    client.search_kb.assert_called_once_with("greeting", mode="chunk", limit=3)
+    client.search_kb.assert_called_once_with("greeting", mode="chunk", limit=3, use_hybrid=False, use_reranking=False)
 
 
 def test_rag_read_full_page_error_handling():
