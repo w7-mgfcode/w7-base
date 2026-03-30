@@ -20,7 +20,7 @@ class StorageOperations:
         """
         Upserts a knowledge source.
         """
-        data = source.model_dump(mode="json")
+        data = source.model_dump(mode="json", exclude_none=True)
         result = await asyncio.to_thread(lambda: self.supabase.table("kb_sources").upsert(data).execute())
         return Source(**result.data[0])
 
@@ -28,7 +28,7 @@ class StorageOperations:
         """
         Upserts a page and handles source-link.
         """
-        data = page.model_dump(mode="json")
+        data = page.model_dump(mode="json", exclude_none=True)
         result = await asyncio.to_thread(lambda: self.supabase.table("kb_pages").upsert(data, on_conflict="url").execute())
         return Page(**result.data[0])
 
@@ -39,7 +39,9 @@ class StorageOperations:
         if not chunks:
             return []
         
-        data = [chunk.model_dump(mode="json") for chunk in chunks]
+        # PostgREST rejects unknown columns even when they are sent as null.
+        # Excluding None keeps old schemas working until optional migrations are applied.
+        data = [chunk.model_dump(mode="json", exclude_none=True) for chunk in chunks]
         # We use on_conflict (url, chunk_number) to avoid duplicates
         result = await asyncio.to_thread(
             lambda: self.supabase.table("kb_chunks").upsert(data, on_conflict="url,chunk_number").execute()
