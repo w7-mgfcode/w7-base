@@ -26,10 +26,12 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
 - **Core Pipeline**: Implemented and Verified.
   - Repo foundation, DB migrations (001-007)
   - Crawl discovery (`llms.txt`, `sitemap.xml`)
+  - **Recursive Crawling** with depth and page limits (Slice 7.6)
+  - **LLMS.txt Task Expansion** for multi-page discovery (Slice 7.7)
   - Ingestion and chunking (Blueprint Section 10)
   - Embedding pipeline (Ollama / OpenAI-compatible)
   - Retrieval engine (Vector + Hybrid + Page grouping)
-  - Advanced Retrieval (Reranking & Contextual Embeddings - gated)
+  - Advanced Retrieval (**Provider-ready Reranking** & Contextual Embeddings - gated)
   - MCP Tool Server (KB-focused tools)
   - React UI Operator Console (source management, search, add knowledge)
   - Feature flags wired into config (`USE_HYBRID_SEARCH`, `USE_RERANKING`, etc.)

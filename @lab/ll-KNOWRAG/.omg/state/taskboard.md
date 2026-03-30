@@ -1,10 +1,12 @@
-# ll-KNOWRAG Taskboard (Recursive Crawl Investigation)
+# ll-KNOWRAG Taskboard
 
-## Investigation Phase
+## Phase 7: Add Knowledge Parity & Fixes
 | Task ID | Task | Owner | Status |
 |---|---|---|---|
-| DIAG-1 | Audit UI/API request parameters | omg-investigator | pending |
-| DIAG-2 | Trace `_run_crawl` execution loop | omg-investigator | pending |
-| DIAG-3 | Audit `extract_links` and normalization | omg-investigator | pending |
-| DIAG-4 | Empirical reproduction of "Single URL" bug | omg-investigator | pending |
-| DIAG-5 | Implement and verify fix | omg-investigator | pending |
+| KB-7.5 | Reranking Provider Upgrade | omg-executor | verified |
+| KB-7.6 | Recursive Crawling & Limit Enforcement | omg-executor | verified |
+| KB-7.7 | LLMS.txt Task Expansion | omg-executor | verified |
+| FIX-1 | Tag Storage Fix | omg-executor | verified |
+| FIX-2 | Recursive Traversal & Normalization Fix | omg-executor | verified |
+| ST-1 | Storage Logic Reconciliation | omg-executor | verified |
+| UI-1 | UI Implementation Audit & Sync | omg-executor | verified |

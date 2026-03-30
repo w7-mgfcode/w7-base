@@ -1,11 +1,15 @@
-# ll-KNOWRAG Workflow (Recursive Investigation)
+# ll-KNOWRAG Workflow
 
 - **Mode**: autopilot
 - **Cycle**: 1
-- **Current Step**: Diagnosis - Request Path & Loop Logic
+- **Current Step**: Done
 
-## Acceptance Criteria
-- [ ] Verified UI sends correct `mode`, `max_depth`, `max_pages`.
-- [ ] Verified `CrawlingService` queue logic handles expansion correctly.
-- [ ] Verified `CrawlerManager` extracts valid internal links.
-- [ ] Identified why recursion stops early.
+## Completed (Phase 7)
+- [x] Reranking Upgrade (Provider-based).
+- [x] Recursive Crawling (Backend parity).
+- [x] LLMS.txt expansion.
+- [x] Tag storage fix.
+- [x] Recursive traversal & normalization fix.
+- [x] Storage Logic Reconciliation (PostgREST fix).
+- [x] UI Implementation Audit & Sync (Overhaul committed).
+- [x] Live verification in container stack.
