@@ -1,0 +1,5 @@
+name: ll-knowrag
+zone: @lab
+purpose: Local-first KB/RAG project based on Archon.
+version: 0.1.0
+w7-compliant: true
