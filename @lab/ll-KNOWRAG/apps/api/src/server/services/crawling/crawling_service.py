@@ -93,10 +93,11 @@ class CrawlingService:
             
             # Helper to add task if not visited and within limits
             def add_to_queue(url, depth, t_type):
-                url = url.split('#')[0].rstrip('/')
-                if url not in visited_urls and len(visited_urls) < request.max_pages:
+                # Standardize: strip fragment and trailing slash
+                normalized = url.split('#')[0].rstrip('/')
+                if normalized not in visited_urls and len(visited_urls) < request.max_pages:
                     tasks_queue.append((url, depth, t_type))
-                    visited_urls.add(url)
+                    visited_urls.add(normalized)
                     return True
                 return False
 
@@ -110,10 +111,16 @@ class CrawlingService:
                         break # Respect max_pages
                         
             elif request.mode == CrawlMode.RECURSIVE:
-                add_to_queue(discovery_result.canonical_url, 0, DiscoveryType.SINGLE_PAGE)
+                # Add all discovered targets as roots for recursion
+                # This ensures if discovery found a better canonical URL or multiple entry points, we use them.
+                if discovery_result.targets:
+                    for target in discovery_result.targets:
+                        add_to_queue(target.url, 0, target.target_type)
+                else:
+                    add_to_queue(discovery_result.canonical_url, 0, DiscoveryType.SINGLE_PAGE)
                 
             elif request.mode == CrawlMode.DISCOVERY_AUTO:
-                # Prioritize llms-full.txt, then llms.txt, then sitemap, then single page
+                # Prioritize llms-full.txt, then llms.txt, then sitemap, then recursive (fallback)
                 best_target = None
                 for target in discovery_result.targets:
                     if target.target_type in (DiscoveryType.LLMS_FULL_TXT, DiscoveryType.LLMS_TXT):
@@ -121,32 +128,38 @@ class CrawlingService:
                         break
                 
                 if not best_target:
-                    # Fallback to sitemap or single page
+                    # Fallback to sitemap
                     for target in discovery_result.targets:
                         if target.target_type == DiscoveryType.SITEMAP_XML:
                             best_target = target
                             break
                 
-                if not best_target:
-                    best_target = discovery_result.targets[-1] # Base URL
-
-                if best_target.target_type == DiscoveryType.SITEMAP_XML:
-                    sitemap_urls = await self.crawler_manager.parse_sitemap(best_target.url)
-                    for url in sitemap_urls:
-                        if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
-                            break
-                elif best_target.target_type == DiscoveryType.LLMS_TXT:
-                    # Expand llms.txt into multiple tasks
-                    llms_urls = await self.crawler_manager.parse_llms_txt(best_target.url)
-                    if llms_urls:
-                        for url in llms_urls:
+                if best_target:
+                    if best_target.target_type == DiscoveryType.SITEMAP_XML:
+                        sitemap_urls = await self.crawler_manager.parse_sitemap(best_target.url)
+                        for url in sitemap_urls:
                             if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
                                 break
+                    elif best_target.target_type == DiscoveryType.LLMS_TXT:
+                        # Expand llms.txt into multiple tasks
+                        llms_urls = await self.crawler_manager.parse_llms_txt(best_target.url)
+                        if llms_urls:
+                            for url in llms_urls:
+                                if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
+                                    break
+                        else:
+                            # Fallback to fetching the llms.txt itself
+                            add_to_queue(best_target.url, 0, best_target.target_type)
                     else:
-                        # Fallback to fetching the llms.txt itself if no URLs extracted
+                        # llms-full.txt or other direct targets
                         add_to_queue(best_target.url, 0, best_target.target_type)
                 else:
-                    add_to_queue(best_target.url, 0, best_target.target_type)
+                    # Final fallback: Recursive crawl of the canonical base URL
+                    # This matches the UI promise: "llms.txt, sitemap, then recursive"
+                    logger.info(f"Discovery found no special targets, falling back to recursive crawl for {discovery_result.canonical_url}")
+                    # We treat this as a RECURSIVE mode internally for the execution loop
+                    request.mode = CrawlMode.RECURSIVE
+                    add_to_queue(discovery_result.canonical_url, 0, DiscoveryType.SINGLE_PAGE)
             
             # 3. Execution loop (Breadth-first for recursive)
             progress.total_tasks = len(tasks_queue)

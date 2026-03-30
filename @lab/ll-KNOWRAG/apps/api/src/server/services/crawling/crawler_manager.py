@@ -49,7 +49,7 @@ class CrawlerManager:
                     "title": title.strip() if title else "",
                     "status_code": response.status_code,
                     "success": True,
-                    "raw_html": raw_content if parser == 'html.parser' else ""
+                    "raw_html": raw_content if 'xml' not in content_type else ""
                 }
         except Exception as e:
             logger.error(f"Crawl failed for {url}: {str(e)}")
