@@ -50,9 +50,15 @@ class RagService:
         # 3. Execute search
         chunks = await strategy.search(request, embedding)
         
-        # 3.1. Reranking (Slice 6.1)
+        # 3.1. Reranking (Slice 6.1, upgraded in 7.5)
+        reranking_applied = False
         if request.use_reranking and self.reranking_service:
-            chunks = await self.reranking_service.rerank(request.query, chunks)
+            try:
+                chunks = await self.reranking_service.rerank(request.query, chunks)
+                reranking_applied = True
+            except Exception as e:
+                logger.warning(f"Reranking failed, using original order: {e}")
+                reranking_applied = False
             
         # 4. Process results by mode
         results = chunks
@@ -66,7 +72,8 @@ class RagService:
             mode=request.mode,
             results=results,
             total_results=len(results),
-            processing_time_ms=processing_time
+            processing_time_ms=processing_time,
+            reranking_applied=reranking_applied
         )
 
     async def _group_by_page(self, chunks: List[ChunkSearchResult]) -> List[PageSearchResult]:

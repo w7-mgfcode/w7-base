@@ -12,3 +12,4 @@
 | KB-7.2 | Slice 7.2 — Model Validation | omg-executor | verified |
 | KB-7.3 | Slice 7.3 — Documentation | omg-executor | verified |
 | KB-7.4 | Slice 7.4 — Final Polish & Lock | omg-executor | verified |
+| KB-7.5 | Slice 7.5 — Reranking Provider Upgrade | omg-executor | verified |

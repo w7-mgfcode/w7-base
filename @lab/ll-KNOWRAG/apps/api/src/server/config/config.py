@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     use_contextual_embeddings: bool = False
     enable_code_examples: bool = False
 
+    # Reranking settings
+    reranking_provider: str = "lexical"
+    reranking_model: str = ""
+    reranking_provider_url: str = ""
+    reranking_api_key: str = ""
+    reranking_top_n: int = 0
+
     # Upload limits
     max_upload_size_mb: int = 50
 

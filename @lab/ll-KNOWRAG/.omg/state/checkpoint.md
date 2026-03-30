@@ -1,13 +1,13 @@
-# Checkpoint: Completed Phase 7
+# Checkpoint: Completed Slice 7.5
 
-- **Objective:** Industrialize Phase 5/6 baseline with security and polish.
+- **Objective**: Upgrade the existing lexical reranker into a provider-ready system (lexical, ollama, cohere).
 - **Mode**: autopilot
 - **Stage**: Completed
 - **Workspace**: @lab/ll-KNOWRAG
-- **Taskboard**: Phase 1-7 complete.
+- **Taskboard**: Phase 1-7 complete. KB-7.5 complete.
 
 ## Summary
-Phase 7 hardening is complete. Secrets are removed from `compose.yml`, startup model validation is added to the API, and documentation is updated to match the actual system capabilities (including Phase 6 features).
+Upgraded `RerankingService` to handle `lexical` (default), `ollama`, and `cohere`. Implemented `reranking_applied` in `SearchResponse`. Added Graceful degradation falling back to lexical behavior. Verified unit tests.
 
 ## Next Step
-- Final verification and commit.
+- Final end-to-end testing and review before moving to other optimizations.

@@ -28,3 +28,16 @@ async def test_reranker_boosts_lexical_overlap():
     assert len(results) == 2
     assert results[0].id == 2  # Chunk 2 should be first now
     assert results[0].similarity > results[1].similarity
+
+@pytest.mark.asyncio
+async def test_reranker_graceful_fallback_on_invalid_provider():
+    reranker = RerankingService(provider="invalid_provider")
+    query = "fastapi docs"
+    chunks = [
+        ChunkSearchResult(id=1, source_id="s1", content="text", similarity=0.9),
+        ChunkSearchResult(id=2, source_id="s1", content="FastAPI", similarity=0.8),
+    ]
+    # Should fall back to lexical
+    results = await reranker.rerank(query, chunks)
+    assert len(results) == 2
+    assert results[0].id == 2  # FastAPI gets lexical boost

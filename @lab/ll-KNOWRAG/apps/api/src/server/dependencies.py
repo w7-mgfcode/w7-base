@@ -23,7 +23,13 @@ ingestion_svc = IngestionService(storage_ops, embedding_svc, settings.use_contex
 crawling_svc = CrawlingService(discovery_svc, crawler_mgr, ingestion_svc)
 vector_strategy = VectorSearchStrategy(supabase)
 hybrid_strategy = HybridSearchStrategy(supabase) if settings.use_hybrid_search else None
-reranking_svc = RerankingService() if settings.use_reranking else None
+reranking_svc = RerankingService(
+    provider=settings.reranking_provider,
+    model=settings.reranking_model,
+    base_url=settings.reranking_provider_url,
+    api_key=settings.reranking_api_key,
+    top_n=settings.reranking_top_n
+)
 rag_svc = RagService(embedding_svc, vector_strategy, hybrid_strategy, reranking_svc)
 
 # Factory functions for dependency injection

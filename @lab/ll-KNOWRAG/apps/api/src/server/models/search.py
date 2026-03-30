@@ -45,3 +45,4 @@ class SearchResponse(BaseModel):
     results: Union[List[ChunkSearchResult], List[PageSearchResult]]
     total_results: int
     processing_time_ms: float = 0.0
+    reranking_applied: bool = False

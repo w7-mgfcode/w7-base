@@ -1,10 +1,13 @@
 # ll-KNOWRAG Workflow
 
 - **Mode**: autopilot
-- **Cycle**: 5
+- **Cycle**: 1
 - **Current Step**: Done
-- **Acceptance Criteria (Phase 7)**:
-    - [x] Secret management & hardening (interpolation).
-    - [x] Startup model validation.
-    - [x] Operational documentation (Runbook/README).
-    - [x] Baseline End-to-End verified.
+- **Acceptance Criteria (Slice 7.5)**:
+    - [x] Settings config updated with RERANKING_PROVIDER and others.
+    - [x] SearchResponse updated with `reranking_applied`.
+    - [x] Reranker refactored to support `lexical`, `ollama`, `cohere`.
+    - [x] Default fallback to `lexical` maintained.
+    - [x] RagService uses `reranking_applied`.
+    - [x] Dependency injection updated without breaking existing API requests.
+    - [x] Verified via pytest and code check.
