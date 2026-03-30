@@ -1,13 +1,13 @@
-# Checkpoint: Completed Slice 7.5
+# Checkpoint: Completed Add Knowledge Parity (Slices 7.6 & 7.7)
 
-- **Objective**: Upgrade the existing lexical reranker into a provider-ready system (lexical, ollama, cohere).
+- **Objective**: Implement recursive crawling, enforce limits, and expand llms.txt.
 - **Mode**: autopilot
 - **Stage**: Completed
 - **Workspace**: @lab/ll-KNOWRAG
-- **Taskboard**: Phase 1-7 complete. KB-7.5 complete.
+- **Taskboard**: KB-7.6 (verified), KB-7.7 (verified).
 
 ## Summary
-Upgraded `RerankingService` to handle `lexical` (default), `ollama`, and `cohere`. Implemented `reranking_applied` in `SearchResponse`. Added Graceful degradation falling back to lexical behavior. Verified unit tests.
+Successfully achieved backend parity with the Add Knowledge UI. Implemented recursive crawling with BFS, loop prevention, and strict depth/page limits. Upgraded llms.txt handling to allow task expansion in auto-discovery mode. Verified all changes via unit and integration tests.
 
 ## Next Step
-- Final end-to-end testing and review before moving to other optimizations.
+- Final review and commit of Add Knowledge backend improvements.

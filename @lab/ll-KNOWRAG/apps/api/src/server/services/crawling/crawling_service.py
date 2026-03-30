@@ -78,7 +78,7 @@ class CrawlingService:
         
         try:
             # 1. Discovery
-            logger.info(f"Starting discovery for {request.base_url} (source_id: {source_id})")
+            logger.info(f"Starting discovery for {request.base_url} (source_id: {source_id}, mode: {request.mode})")
             discovery_result = await self.discovery_service.discover(request.base_url)
             
             if not discovery_result.success:
@@ -86,16 +86,32 @@ class CrawlingService:
                 progress.error = discovery_result.error
                 return
 
-            # 2. Planning (Mode selection)
-            tasks: List[CrawlTask] = []
+            # 2. Planning (Task generation)
+            tasks_queue = [] # Queue for recursive: List[(url, depth, type)]
+            all_crawl_results = []
+            visited_urls = set()
             
+            # Helper to add task if not visited and within limits
+            def add_to_queue(url, depth, t_type):
+                url = url.split('#')[0].rstrip('/')
+                if url not in visited_urls and len(visited_urls) < request.max_pages:
+                    tasks_queue.append((url, depth, t_type))
+                    visited_urls.add(url)
+                    return True
+                return False
+
             if request.mode == CrawlMode.SINGLE_PAGE:
-                tasks.append(CrawlTask(url=discovery_result.canonical_url, target_type=DiscoveryType.SINGLE_PAGE))
+                add_to_queue(discovery_result.canonical_url, 0, DiscoveryType.SINGLE_PAGE)
+                
             elif request.mode == CrawlMode.SITEMAP:
                 sitemap_urls = await self.crawler_manager.parse_sitemap(request.base_url)
-                sitemap_urls = sitemap_urls[:request.max_pages]
                 for url in sitemap_urls:
-                    tasks.append(CrawlTask(url=url, target_type=DiscoveryType.SINGLE_PAGE))
+                    if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
+                        break # Respect max_pages
+                        
+            elif request.mode == CrawlMode.RECURSIVE:
+                add_to_queue(discovery_result.canonical_url, 0, DiscoveryType.SINGLE_PAGE)
+                
             elif request.mode == CrawlMode.DISCOVERY_AUTO:
                 # Prioritize llms-full.txt, then llms.txt, then sitemap, then single page
                 best_target = None
@@ -115,31 +131,54 @@ class CrawlingService:
                     best_target = discovery_result.targets[-1] # Base URL
 
                 if best_target.target_type == DiscoveryType.SITEMAP_XML:
-                    # If it's a sitemap, we expand it
                     sitemap_urls = await self.crawler_manager.parse_sitemap(best_target.url)
-                    # Limit to max_pages
-                    sitemap_urls = sitemap_urls[:request.max_pages]
                     for url in sitemap_urls:
-                        tasks.append(CrawlTask(url=url, target_type=DiscoveryType.SINGLE_PAGE))
+                        if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
+                            break
+                elif best_target.target_type == DiscoveryType.LLMS_TXT:
+                    # Expand llms.txt into multiple tasks
+                    llms_urls = await self.crawler_manager.parse_llms_txt(best_target.url)
+                    if llms_urls:
+                        for url in llms_urls:
+                            if not add_to_queue(url, 0, DiscoveryType.SINGLE_PAGE):
+                                break
+                    else:
+                        # Fallback to fetching the llms.txt itself if no URLs extracted
+                        add_to_queue(best_target.url, 0, best_target.target_type)
                 else:
-                    tasks.append(CrawlTask(url=best_target.url, target_type=best_target.target_type))
+                    add_to_queue(best_target.url, 0, best_target.target_type)
             
-            # 3. Execution & Ingestion Feed
-            progress.total_tasks = len(tasks)
+            # 3. Execution loop (Breadth-first for recursive)
+            progress.total_tasks = len(tasks_queue)
             
-            all_crawl_results = []
-            
-            for task in tasks:
-                progress.current_task_url = task.url
-                result = await self.crawler_manager.crawl(task.url)
+            q_idx = 0
+            while q_idx < len(tasks_queue):
+                if progress.status == CrawlStatus.CANCELLED:
+                    logger.info(f"Crawl {crawl_id} cancelled.")
+                    break
+                    
+                url, depth, t_type = tasks_queue[q_idx]
+                q_idx += 1
+                
+                progress.current_task_url = url
+                result = await self.crawler_manager.crawl(url)
                 
                 if result.get("success"):
                     # Special handling for llms-full.txt (split into pages)
-                    if task.target_type == DiscoveryType.LLMS_FULL_TXT:
+                    if t_type == DiscoveryType.LLMS_FULL_TXT:
                         split_results = self._split_llms_full_txt(result)
                         all_crawl_results.extend(split_results)
                     else:
                         all_crawl_results.append(result)
+                    
+                    # If recursive mode, extract links from this page and add to queue
+                    if request.mode == CrawlMode.RECURSIVE and depth < request.max_depth:
+                        links = self.crawler_manager.extract_links(result.get("raw_html", ""), url)
+                        for link in links:
+                            add_to_queue(link, depth + 1, DiscoveryType.SINGLE_PAGE)
+                        
+                        # Update total tasks for progress reporting
+                        progress.total_tasks = len(tasks_queue)
                     
                     progress.completed_tasks += 1
                 else:
@@ -151,13 +190,18 @@ class CrawlingService:
             # 4. Trigger Ingestion (Authoritative Upstream)
             if all_crawl_results:
                 logger.info(f"Triggering ingestion for {len(all_crawl_results)} results (source_id: {source_id})")
+                
+                # Merge request metadata with crawl-specific metadata
+                ingestion_metadata = dict(request.metadata or {})
+                ingestion_metadata["base_url"] = request.base_url
+                
                 await self.ingestion_service.ingest_crawl_results(
                     source_id=source_id,
                     crawl_results=all_crawl_results,
-                    metadata={"base_url": request.base_url}
+                    metadata=ingestion_metadata
                 )
 
-            progress.status = CrawlStatus.COMPLETED
+            progress.status = CrawlStatus.COMPLETED if progress.status != CrawlStatus.CANCELLED else CrawlStatus.CANCELLED
             progress.current_task_url = None
             
         except Exception as e:

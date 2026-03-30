@@ -13,3 +13,5 @@
 | KB-7.3 | Slice 7.3 — Documentation | omg-executor | verified |
 | KB-7.4 | Slice 7.4 — Final Polish & Lock | omg-executor | verified |
 | KB-7.5 | Slice 7.5 — Reranking Provider Upgrade | omg-executor | verified |
+| KB-7.6 | Slice 7.6 — Recursive Crawling & Limit Enforcement | omg-executor | verified |
+| KB-7.7 | Slice 7.7 — LLMS.txt Task Expansion | omg-executor | verified |

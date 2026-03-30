@@ -4,6 +4,9 @@ from typing import Dict, Any, Optional, List
 from bs4 import BeautifulSoup
 import asyncio
 
+from urllib.parse import urlparse, urljoin
+import re
+
 logger = logging.getLogger(__name__)
 
 class CrawlerManager:
@@ -45,7 +48,8 @@ class CrawlerManager:
                     "content": content,
                     "title": title.strip() if title else "",
                     "status_code": response.status_code,
-                    "success": True
+                    "success": True,
+                    "raw_html": raw_content if parser == 'html.parser' else ""
                 }
         except Exception as e:
             logger.error(f"Crawl failed for {url}: {str(e)}")
@@ -54,6 +58,38 @@ class CrawlerManager:
                 "error": str(e),
                 "success": False
             }
+
+    def extract_links(self, html: str, base_url: str) -> List[str]:
+        """
+        Extracts internal links from HTML content.
+        Filters for same domain/subdomain and ignores non-content extensions.
+        """
+        if not html:
+            return []
+            
+        soup = BeautifulSoup(html, 'html.parser')
+        base_parsed = urlparse(base_url)
+        internal_links = set()
+        
+        # Common non-content extensions to ignore
+        ignore_ext = re.compile(r'\.(pdf|zip|gz|tar|mp3|mp4|avi|mov|jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|otf)$', re.IGNORECASE)
+        
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            # Join with base URL to handle relative links
+            full_url = urljoin(base_url, href)
+            # Remove fragments
+            full_url = full_url.split('#')[0].rstrip('/')
+            
+            parsed = urlparse(full_url)
+            
+            # Check if internal (same hostname)
+            if parsed.netloc == base_parsed.netloc:
+                # Filter out obvious non-content files
+                if not ignore_ext.search(parsed.path):
+                    internal_links.add(full_url)
+                    
+        return list(internal_links)
 
     async def parse_sitemap(self, sitemap_url: str) -> List[str]:
         """
@@ -70,4 +106,31 @@ class CrawlerManager:
                 return urls
         except Exception as e:
             logger.error(f"Failed to parse sitemap {sitemap_url}: {str(e)}")
+            return []
+
+    async def parse_llms_txt(self, url: str) -> List[str]:
+        """
+        Fetches and parses an llms.txt file to extract URLs.
+        llms.txt is a markdown file; we extract all absolute or relative links.
+        """
+        logger.info(f"Parsing llms.txt: {url}")
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, headers={"User-Agent": self.user_agent}) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                
+                content = response.text
+                # Extract markdown links: [text](url)
+                links = re.findall(r'\[[^\]]+\]\(([^)]+)\)', content)
+                
+                # Normalize and filter
+                expanded_urls = set()
+                for link in links:
+                    full_url = urljoin(url, link).split('#')[0].rstrip('/')
+                    if full_url.startswith('http'):
+                        expanded_urls.add(full_url)
+                
+                return list(expanded_urls)
+        except Exception as e:
+            logger.error(f"Failed to parse llms.txt {url}: {str(e)}")
             return []
