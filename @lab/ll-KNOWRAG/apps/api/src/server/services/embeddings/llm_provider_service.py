@@ -15,6 +15,35 @@ class LLMProviderService:
         self.api_key = api_key
         self.timeout = httpx.Timeout(60.0)
 
+    async def check_model(self, model: str) -> bool:
+        """
+        Verify if a model is available at the provider.
+        """
+        try:
+            if "ollama" in self.base_url or ":11434" in self.base_url:
+                url = f"{self.base_url}/api/tags"
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    data = response.json()
+                    models = [m["name"] for m in data.get("models", [])]
+                    return model in models or f"{model}:latest" in models
+            else:
+                url = f"{self.base_url}/v1/models"
+                headers = {}
+                if self.api_key:
+                    headers["Authorization"] = f"Bearer {self.api_key}"
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    response = await client.get(url, headers=headers)
+                    response.raise_for_status()
+                    data = response.json()
+                    models = [m["id"] for m in data.get("data", [])]
+                    return model in models
+        except Exception as e:
+            logger.warning(f"Could not verify model availability for {model}: {str(e)}")
+            # Default to True to avoid blocking if the provider's /tags or /models is down or weird
+            return True
+
     async def get_embeddings(self, model: str, texts: List[str]) -> List[List[float]]:
         """
         Generic embedding fetcher.

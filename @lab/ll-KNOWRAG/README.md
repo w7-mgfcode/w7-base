@@ -13,24 +13,33 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
 - **Embeddings/LLM**: Ollama (local) or OpenAI-compatible cloud (defaults to Ollama).
 
 ## Getting Started
-1. Copy `.env.example` to `.env`.
-2. Configure your `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`.
-3. (Optional) Run `docker compose up -d ollama` and pull your model: `docker exec -it knowrag-ollama ollama pull nomic-embed-text`
-4. Run `docker compose up --build`.
+1. **Configure Env**: Copy `.env.example` to `.env` and set `JWT_SECRET` and `SUPABASE_SERVICE_KEY`.
+2. **Boot Services**: `docker compose up -d`
+3. **Initialize Models**:
+   ```bash
+   docker exec -it knowrag-ollama ollama pull nomic-embed-text
+   docker exec -it knowrag-ollama ollama pull llama3
+   ```
+4. **Access Console**: Open `http://localhost:3737` in your browser.
 
 ## Current Status
-- **Core Pipeline**: Implemented.
-  - Repo foundation, DB migrations (001-006)
+- **Core Pipeline**: Implemented and Verified.
+  - Repo foundation, DB migrations (001-007)
   - Crawl discovery (`llms.txt`, `sitemap.xml`)
   - Ingestion and chunking (Blueprint Section 10)
   - Embedding pipeline (Ollama / OpenAI-compatible)
   - Retrieval engine (Vector + Hybrid + Page grouping)
+  - Advanced Retrieval (Reranking & Contextual Embeddings - gated)
   - MCP Tool Server (KB-focused tools)
   - React UI Operator Console (source management, search, add knowledge)
   - Feature flags wired into config (`USE_HYBRID_SEARCH`, `USE_RERANKING`, etc.)
-- **Pending**:
-  - Reranking implementation (feature flag exists, no logic yet)
-  - Contextual embeddings (feature flag exists, no logic yet)
-  - Code examples table and endpoints (optional, deferred)
-  - Comprehensive integration and end-to-end test coverage
-- **Ready for**: Local dev execution and testing.
+- **Maintenance & Security (Phase 7)**: Implemented.
+  - Environment variable interpolation in Compose
+  - Hardened secret management (no hardcoded keys in Compose)
+  - Startup model validation and improved logging
+  - Log level configuration
+  - Operator docs and Runbook updated
+- **Ready for**: Local dev execution, testing, and agent integration.
+
+## License
+MIT

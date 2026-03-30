@@ -3,9 +3,9 @@ services:
     image: pgvector/pgvector:pg16
     container_name: knowrag-db
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${DB_PORT:-54322}:5432"
     volumes:
@@ -18,10 +18,10 @@ services:
     image: postgrest/postgrest:latest
     container_name: knowrag-postgrest
     environment:
-      - PGRST_DB_URI=postgres://postgres:postgres@knowrag-db:5432/postgres
+      - PGRST_DB_URI=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@knowrag-db:5432/${POSTGRES_DB:-postgres}
       - PGRST_DB_SCHEMA=public
-      - PGRST_DB_ANON_ROLE=postgres
-      - PGRST_JWT_SECRET=this_is_a_very_long_secret_key_32_chars_long_exactly_now
+      - PGRST_DB_ANON_ROLE=${PGRST_DB_ANON_ROLE:-postgres}
+      - PGRST_JWT_SECRET=${JWT_SECRET}
     ports:
       - "${POSTGREST_PORT:-3000}:3000"
     depends_on:
@@ -43,14 +43,14 @@ services:
     build: ./apps/api
     image: knowrag-api:latest
     container_name: knowrag-api
-    command: ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8181", "--log-level", "debug"]
+    command: ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8181", "--log-level", "${LOG_LEVEL:-info}"]
     ports:
       - "${API_PORT:-8181}:8181"
     environment:
-      - SUPABASE_URL=http://knowrag-proxy
-      - SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicG9zdGdyZXMiLCJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3NDg1NTA3NywiZXhwIjoyMDkwMjE1MDc3fQ.OQJSJtLi9AnW_uyS8DOOar3CweDqyhpYccohOwBtTmw
+      - SUPABASE_URL=${SUPABASE_URL:-http://knowrag-proxy}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - API_PORT=8181
+      - API_PORT=${API_PORT:-8181}
     depends_on:
       - ollama
       - knowrag-postgrest
@@ -64,8 +64,8 @@ services:
     ports:
       - "${MCP_PORT:-8051}:8051"
     environment:
-      - API_SERVICE_URL=http://knowrag-api:8181
-      - MCP_PORT=8051
+      - API_SERVICE_URL=${API_SERVICE_URL:-http://knowrag-api:8181}
+      - MCP_PORT=${MCP_PORT:-8051}
     depends_on:
       - knowrag-api
     networks:
@@ -94,14 +94,6 @@ services:
       - ./data/ollama:/root/.ollama
     networks:
       - knowrag-net
-    # Optional GPU support
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
 
 networks:
   knowrag-net:

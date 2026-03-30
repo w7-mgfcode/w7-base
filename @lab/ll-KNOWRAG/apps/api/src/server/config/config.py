@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     chat_model: str = "llama3"
     api_host: str = "0.0.0.0"
     api_port: int = 8181
+    log_level: str = "info"
 
     # Feature flags (Blueprint Section 18)
     use_hybrid_search: bool = False

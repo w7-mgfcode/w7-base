@@ -1,13 +1,13 @@
-# Checkpoint: Completed Phase 6
+# Checkpoint: Completed Phase 7
 
-- **Objective:** Implement Advanced Retrieval (Reranking & Contextual Embeddings).
+- **Objective:** Industrialize Phase 5/6 baseline with security and polish.
 - **Mode**: autopilot
 - **Stage**: Completed
 - **Workspace**: @lab/ll-KNOWRAG
-- **Taskboard**: Phase 1-6 complete.
+- **Taskboard**: Phase 1-7 complete.
 
 ## Summary
-Advanced retrieval features are complete. Reranking is integrated into the API, UI, and MCP. Contextual embeddings are added to the ingestion service and schema, configurable via feature flags. Live environment and tests verified.
+Phase 7 hardening is complete. Secrets are removed from `compose.yml`, startup model validation is added to the API, and documentation is updated to match the actual system capabilities (including Phase 6 features).
 
 ## Next Step
-- Final review and commit.
+- Final verification and commit.

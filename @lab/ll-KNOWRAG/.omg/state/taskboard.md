@@ -1,14 +1,14 @@
 # ll-KNOWRAG Taskboard
 
-## Phase 1-5: Foundation to Stabilization
+## Phase 1-6: Foundation to Advanced Retrieval
 | Task ID | Task | Owner | Status |
 |---|---|---|---|
-| KB-1.x to ST-5.x | Baseline Stabilization | omg-executor | verified |
+| KB-1.x to ST-6.x | Core Pipeline & Advanced Retrieval | omg-executor | verified |
 
-## Phase 6: Advanced Retrieval
+## Phase 7: Maintenance & Polish
 | Task ID | Task | Owner | Status |
 |---|---|---|---|
-| KB-6.1 | Slice 6.1 — Reranking Logic (API) | omg-executor | verified |
-| KB-6.2 | Slice 6.2 — Reranking UI & MCP | omg-executor | verified |
-| KB-6.3 | Slice 6.3 — Contextual Embedding Logic | omg-executor | verified |
-| KB-6.4 | Slice 6.4 — Contextual Schema & E2E | omg-executor | verified |
+| KB-7.1 | Slice 7.1 — Secret Management | omg-executor | verified |
+| KB-7.2 | Slice 7.2 — Model Validation | omg-executor | verified |
+| KB-7.3 | Slice 7.3 — Documentation | omg-executor | verified |
+| KB-7.4 | Slice 7.4 — Final Polish & Lock | omg-executor | verified |
