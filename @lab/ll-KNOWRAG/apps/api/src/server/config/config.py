@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     crawl_page_timeout: int = 30
     crawl_wait_strategy: str = "networkidle"
 
+    # Crawl4AI browser-based crawling
+    use_crawl4ai: bool = True
+    crawl4ai_headless: bool = True
+    crawl4ai_viewport_width: int = 1920
+    crawl4ai_viewport_height: int = 1080
+    crawl4ai_delay_before_return: float = 1.0
+    crawl4ai_scan_full_page: bool = True
+
     class Config:
         env_file = ".env"
         extra = "ignore"

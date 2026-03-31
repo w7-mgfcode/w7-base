@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from server.api_routes import knowledge_api, rag_api, pages_api, upload_api
 from server.config.config import settings
-from server.dependencies import provider_svc
+from server.dependencies import provider_svc, crawler_mgr
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -37,7 +37,13 @@ async def lifespan(app: FastAPI):
     if settings.use_reranking:
         logger.info("USE_RERANKING enabled (using Lexical Boost fallback).")
         
+    # Start Crawl4AI browser
+    await crawler_mgr.startup()
+
     yield
+
+    # Shutdown browser
+    await crawler_mgr.shutdown()
 
 app = FastAPI(title="KnowRAG API", lifespan=lifespan)
 

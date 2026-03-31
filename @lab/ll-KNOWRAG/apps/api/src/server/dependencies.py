@@ -15,7 +15,16 @@ from server.services.search.rag_service import RagService
 # Global instances (initialized once)
 supabase: Client = create_client(settings.supabase_url, settings.supabase_service_key)
 discovery_svc = DiscoveryService()
-crawler_mgr = CrawlerManager()
+crawler_mgr = CrawlerManager(
+    timeout=settings.crawl_page_timeout,
+    use_crawl4ai=settings.use_crawl4ai,
+    headless=settings.crawl4ai_headless,
+    viewport_width=settings.crawl4ai_viewport_width,
+    viewport_height=settings.crawl4ai_viewport_height,
+    wait_strategy=settings.crawl_wait_strategy,
+    delay_before_return=settings.crawl4ai_delay_before_return,
+    scan_full_page=settings.crawl4ai_scan_full_page,
+)
 storage_ops = StorageOperations(supabase)
 provider_svc = LLMProviderService(settings.embedding_provider_url)
 embedding_svc = EmbeddingService(provider_svc, settings.embedding_model, settings.embedding_dimension)
