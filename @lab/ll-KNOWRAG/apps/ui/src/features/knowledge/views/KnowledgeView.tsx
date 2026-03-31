@@ -8,7 +8,7 @@ import { AddKnowledgeDialog } from '../components/AddKnowledgeDialog'
 import { SearchInterface } from '../../search/components/SearchInterface'
 import { Button } from '../../../components/ui/Button'
 import { EmptyState } from '../../../components/ui/EmptyState'
-import { Plus, Search as SearchIcon } from 'lucide-react'
+import { Plus, Search as SearchIcon, ArrowLeft } from 'lucide-react'
 
 export function KnowledgeView() {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null)
@@ -110,7 +110,7 @@ export function KnowledgeView() {
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel — Source List */}
           <div className="w-[380px] shrink-0 border-r border-border flex flex-col max-lg:w-full max-lg:hidden max-lg:data-[visible=true]:flex"
-               data-visible={!selectedSource || undefined}>
+               data-visible={(!selectedSource && !searchMode) || undefined}>
             <SourceList
               sources={sources}
               isLoading={isLoading}
@@ -126,7 +126,15 @@ export function KnowledgeView() {
           {/* Right Panel */}
           <div className="flex-1 overflow-hidden flex flex-col max-lg:w-full">
             {searchMode ? (
-              <SearchInterface sources={sources} />
+              <>
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-border lg:hidden">
+                  <button onClick={() => setSearchMode(false)} className="text-text-secondary hover:text-text-primary cursor-pointer">
+                    <ArrowLeft size={18} />
+                  </button>
+                  <span className="text-sm font-medium">Search</span>
+                </div>
+                <SearchInterface sources={sources} />
+              </>
             ) : selectedSource ? (
               <SourceDetail
                 source={selectedSource}

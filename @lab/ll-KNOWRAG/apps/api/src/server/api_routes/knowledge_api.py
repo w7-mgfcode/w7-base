@@ -11,8 +11,17 @@ router = APIRouter(prefix="/api/knowledge-items", tags=["Knowledge"])
 @router.get("", response_model=List[Source])
 async def list_sources(storage_ops: Annotated[StorageOperations, Depends(get_storage_ops)]):
     try:
-        result = storage_ops.supabase.table("kb_sources").select("*").execute()
-        return [Source(**item) for item in result.data]
+        result = storage_ops.supabase.rpc("get_sources_with_counts").execute()
+        sources = []
+        for item in result.data:
+            page_count = item.pop("page_count", 0)
+            chunk_count = item.pop("chunk_count", 0)
+            metadata = item.get("metadata") or {}
+            metadata["page_count"] = page_count
+            metadata["chunk_count"] = chunk_count
+            item["metadata"] = metadata
+            sources.append(Source(**item))
+        return sources
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

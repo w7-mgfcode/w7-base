@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Source, SearchResponse, ChunkSearchResult, PageSearchResult } from '../../knowledge/types'
 import { useSearchMutation } from '../../knowledge/hooks/useKnowledgeQueries'
 import { Input } from '../../../components/ui/Input'
@@ -29,6 +29,15 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
   const [sourceFilter, setSourceFilter] = useState('')
   const [threshold, setThreshold] = useState(0.0)
   const [limit, setLimit] = useState(10)
+
+  const duplicateNames = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const s of sources) {
+      const name = s.source_display_name || s.source_id
+      counts.set(name, (counts.get(name) || 0) + 1)
+    }
+    return new Set([...counts.entries()].filter(([, c]) => c > 1).map(([n]) => n))
+  }, [sources])
 
   const searchMutation = useSearchMutation()
   const results: SearchResponse | undefined = searchMutation.data
@@ -76,11 +85,14 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
           </Select>
           <Select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-40 text-xs">
             <option value="">All Sources</option>
-            {sources.map((s) => (
-              <option key={s.source_id} value={s.source_id}>
-                {s.source_display_name || s.source_id}
-              </option>
-            ))}
+            {sources.map((s) => {
+              const label = s.source_display_name || s.source_id
+              return (
+                <option key={s.source_id} value={s.source_id}>
+                  {duplicateNames.has(label) ? `${label} (${s.source_id})` : label}
+                </option>
+              )
+            })}
           </Select>
           <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
             <input type="checkbox" checked={useHybrid} onChange={(e) => setUseHybrid(e.target.checked)}

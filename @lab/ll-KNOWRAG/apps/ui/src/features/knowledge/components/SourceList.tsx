@@ -34,9 +34,9 @@ export function SourceList({
   const filtered = useMemo(() => {
     let result = sources
     if (typeFilter === 'crawled') {
-      result = result.filter((s) => s.source_url && !s.metadata?.uploaded)
+      result = result.filter((s) => s.source_url && !s.metadata?.upload)
     } else if (typeFilter === 'uploaded') {
-      result = result.filter((s) => s.metadata?.uploaded)
+      result = result.filter((s) => s.metadata?.upload)
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase()

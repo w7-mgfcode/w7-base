@@ -41,18 +41,19 @@ class IngestionService:
         # 2. Process each result as a Page
         for result in crawl_results:
             content = result.get("content", "")
-            url = result.get("url")
-            
+            url = self._normalize_url(result.get("url", ""))
+
             page = PageCreate(
                 source_id=source_id,
                 url=url,
                 full_content=content,
+                section_title=result.get("title"),
                 word_count=len(content.split()),
                 char_count=len(content),
                 metadata=result.get("metadata", {})
             )
             stored_page = await self.storage_ops.upsert_page(page)
-            
+
             # 3. Create Chunks (Blueprint Section 10)
             chunks = self._chunk_content(content, source_id, stored_page.id, url)
             
@@ -79,6 +80,11 @@ class IngestionService:
             
             if chunks:
                 await self.storage_ops.insert_chunks(chunks)
+
+    @staticmethod
+    def _normalize_url(url: str) -> str:
+        """Strip fragment and trailing slash for consistent URL storage."""
+        return url.split('#')[0].rstrip('/') if url else url
 
     def _chunk_content(self, content: str, source_id: str, page_id: uuid.UUID, url: str) -> List[ChunkCreate]:
         """
