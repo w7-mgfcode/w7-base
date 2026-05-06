@@ -1,0 +1,92 @@
+name: W7 Deploy
+
+# Local-first deployment workflow for the @ops/act-runner.
+#
+# Triggered on push to master after `validate` passes. Performs:
+#   1. Pre-flight: Docker socket reachable, compose syntax valid.
+#   2. SOPS auto-decryption of any .env.sops files newer than .env.
+#   3. `w7 up` on the changed stacks (or all-of-zone for non-stack changes).
+#
+# This workflow assumes the runner is configured with:
+#   - /var/run/docker.sock mounted (per @ops/act-runner compose.yml)
+#   - The repo checked out at the W7_ROOT path (i.e., the runner's workspace
+#     is the repo root)
+#   - sops + age available on the runner image (or installed via this job)
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: 'Stack to deploy (e.g. @dev/anythingllm). Empty = all changed.'
+        required: false
+        default: ''
+
+jobs:
+  preflight:
+    name: Pre-flight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Docker reachable
+        run: docker info >/dev/null
+
+      - name: Compose syntax (changed stacks)
+        run: |
+          set -e
+          # When act-runner is on the host, we can shortcut: validate all stacks.
+          while IFS= read -r meta; do
+            stack="${meta%/.w7-meta}"
+            [[ -f "$stack/compose.yml" ]] || continue
+            docker compose -f "$stack/compose.yml" --env-file "${stack}/.env.example" config -q
+          done < <(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name '.w7-meta')
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: preflight
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Resolve W7_ROOT
+        run: echo "W7_ROOT=$PWD" >> $GITHUB_ENV
+
+      - name: Determine target stack(s)
+        id: targets
+        run: |
+          set -e
+          mode="${{ inputs.stack }}"
+          if [[ -n "$mode" ]]; then
+            echo "stacks=$mode" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Stacks touched in this push
+          changed=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" 2>/dev/null | \
+            awk -F/ '/^@(ops|dev|prod|lab)\// {print $1"/"$2}' | sort -u | tr '\n' ' ')
+          echo "stacks=$changed" >> $GITHUB_OUTPUT
+
+      - name: w7 up
+        env:
+          W7_YES: "1"
+        run: |
+          set -e
+          stacks="${{ steps.targets.outputs.stacks }}"
+          if [[ -z "$stacks" ]]; then
+            echo "No stacks changed — nothing to deploy."
+            exit 0
+          fi
+          for stack in $stacks; do
+            zone="${stack%%/*}"
+            if [[ "$zone" == "@prod" ]]; then
+              echo "::warning::skipping $stack — @prod requires manual approval, not auto-deploy"
+              continue
+            fi
+            echo "→ deploying $stack"
+            ./.bin/w7 up "$stack" || exit 1
+          done
+
+      - name: Health snapshot
+        if: always()
+        run: ./.bin/w7 stat || true

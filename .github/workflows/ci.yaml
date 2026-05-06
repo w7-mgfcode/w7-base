@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  validate-compose:
+    name: Validate Docker Compose stacks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Discover stacks
+        id: discover
+        run: |
+          set -e
+          mapfile -t stacks < <(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name '.w7-meta' 2>/dev/null | sed 's|/.w7-meta||' | sort)
+          if [[ ${#stacks[@]} -eq 0 ]]; then
+            echo "::warning::No stacks discovered (no .w7-meta files found)"
+            exit 0
+          fi
+          printf '  - %s\n' "${stacks[@]}"
+          printf '%s\n' "${stacks[@]}" > /tmp/stacks.txt
+
+      - name: Validate compose syntax
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r stack; do
+            [[ -z "$stack" ]] && continue
+            if [[ ! -f "$stack/compose.yml" ]]; then
+              echo "::warning file=$stack::missing compose.yml"
+              continue
+            fi
+            echo "::group::$stack"
+            if [[ -f "$stack/.env.example" ]]; then
+              docker compose -f "$stack/compose.yml" --env-file "$stack/.env.example" config -q || fail=1
+            else
+              docker compose -f "$stack/compose.yml" config -q || fail=1
+            fi
+            echo "::endgroup::"
+          done < /tmp/stacks.txt
+          exit $fail
+
+  policy-checks:
+    name: Run W7 policy scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: prod-privileged
+        run: bash .shared/policy/prod-privileged.sh || exit 1
+
+      - name: prod-no-root-mount
+        run: bash .shared/policy/prod-no-root-mount.sh || exit 1
+
+      - name: zone-ingress-naming
+        run: bash .shared/policy/zone-ingress-naming.sh || exit 1
+
+  contract-check:
+    name: Stack contract structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify each stack has the contract files
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r meta; do
+            stack="${meta%/.w7-meta}"
+            for required in compose.yml .env.example; do
+              if [[ ! -f "$stack/$required" ]]; then
+                echo "::error file=$stack::missing $required"
+                fail=1
+              fi
+            done
+          done < <(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name '.w7-meta' 2>/dev/null)
+          exit $fail

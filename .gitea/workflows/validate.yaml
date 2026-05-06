@@ -1,0 +1,39 @@
+name: W7 Validate
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compose-config:
+    name: docker compose config across all stacks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate every stack
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r meta; do
+            stack="${meta%/.w7-meta}"
+            [[ ! -f "$stack/compose.yml" ]] && continue
+            echo "→ validating $stack"
+            if [[ -f "$stack/.env.example" ]]; then
+              docker compose -f "$stack/compose.yml" --env-file "$stack/.env.example" config -q || fail=1
+            else
+              docker compose -f "$stack/compose.yml" config -q || fail=1
+            fi
+          done < <(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name '.w7-meta' 2>/dev/null | sort)
+          exit $fail
+
+  policy:
+    name: W7 static policies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: bash .shared/policy/prod-privileged.sh
+      - run: bash .shared/policy/prod-no-root-mount.sh
+      - run: bash .shared/policy/zone-ingress-naming.sh

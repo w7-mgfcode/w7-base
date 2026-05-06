@@ -8,6 +8,8 @@
 [![GitOps](https://img.shields.io/badge/gitops-Gitea%20%2B%20Webhook-609926?logo=gitea)]()
 [![Secrets](https://img.shields.io/badge/secrets-SOPS%20%2B%20AGE-blue)]()
 [![Status](https://img.shields.io/badge/baseline-Phase%207%20sealed-success)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![CI](https://github.com/w7-mgfcode/w7-base/actions/workflows/ci.yaml/badge.svg)](https://github.com/w7-mgfcode/w7-base/actions/workflows/ci.yaml)
 
 ---
 
@@ -170,6 +172,18 @@ Full guide: [.shared/SECRETS.md](.shared/SECRETS.md)
 The webhook flow: push → HMAC verify → `git pull` → `docker compose config` validation → `w7 up`. Failed validation rolls back the commit; the running stack stays untouched.
 
 Full design: [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md)
+
+### Gitea Actions workflows
+
+The repo ships with ready-to-run workflows for the local `@ops/act-runner`:
+
+| File | Purpose |
+|------|---------|
+| `.gitea/workflows/validate.yaml` | `docker compose config` across every stack + run all `.shared/policy/*.sh` checks. Triggered on push/PR. |
+| `.gitea/workflows/deploy.yaml` | Discovers stacks changed in the push, runs `w7 up` on each (skips `@prod` — that path requires manual approval). |
+| `.shared/workflows/deploy-template.yaml` | Reference template for stacks that want their own per-repo deploy pipeline. |
+
+GitHub Actions equivalents (`.github/workflows/ci.yaml`, `lint.yaml`) run the same compose + policy + ShellCheck/yamllint validation on PRs.
 
 ---
 
@@ -358,7 +372,7 @@ This is a personal homelab/operator framework first, but suggestions and patches
 
 ## 📜 License
 
-(To be added — currently unlicensed; treat as "all rights reserved" until a license is committed.)
+Released under the [MIT License](LICENSE).
 
 ---
 

@@ -70,4 +70,9 @@ W7-Base is a local-first orchestration framework that provides PaaS-like ergonom
 - **Main CLI:** `.bin/w7`
 - **Shell Bridge:** `.shared/w7.sh`
 - **Policies:** `.shared/policy/*.sh`
+- **Architecture:** [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md)
+- **Security:** [docs/SECURITY_POLICY.md](docs/SECURITY_POLICY.md)
+- **Monitoring:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)
+- **Backups:** [docs/BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md)
+- **CI/CD:** [docs/CI_CD_EXAMPLES.md](docs/CI_CD_EXAMPLES.md)
 - **Design Docs:** `.shared/GITOPS_DESIGN.md`, `README.md`, `docs/README-LLM.md`
