@@ -284,24 +284,34 @@ check_related() {
 
 check_mcp_search() {
   local body
-  local args; args=$(jq -nc '{query:"verify baseline retrieval smoke", source_id:"", match_count:5}')
+  local args; args=$(jq -nc '{query:"verify baseline retrieval smoke", mode:"chunk", limit:5}')
   body=$(mcp_call "rag_search_knowledge_base" "$args" 2>>"${TRACE_LOG}") || {
-    CHECK_DETAIL="MCP server not reachable at ${MCP_URL}"
+    CHECK_DETAIL="MCP server not reachable or session handshake failed at ${MCP_URL}"
     return 1
   }
-  # FastMCP HTTP returns either a JSON-RPC envelope or an SSE event. Inspect
-  # body content; success means a non-error response with non-empty content.
-  if grep -qE '"error"|"isError"[[:space:]]*:[[:space:]]*true' <<<"$body"; then
-    CHECK_DETAIL="MCP returned an error response"
+  # FastMCP HTTP responses arrive as Server-Sent Events: lines like
+  # `event: message\ndata: {...json...}\n\n`. Extract the JSON-RPC envelope
+  # from the data line; fall back to the raw body if not SSE-encoded.
+  local json
+  json=$(awk '/^data: /{sub(/^data: /,""); print; exit}' <<<"$body")
+  [[ -z "$json" ]] && json="$body"
+  if jq -e '.error' >/dev/null 2>&1 <<<"$json"; then
+    local msg; msg=$(jq -r '.error.message' <<<"$json" 2>/dev/null)
+    CHECK_DETAIL="MCP returned JSON-RPC error: ${msg}"
     return 1
   fi
-  # Look for any of: result.content, content array, hits text — be tolerant
-  # of FastMCP version shape variations.
-  if grep -qE '"result"|"content"|"text"|"hits"|"results"' <<<"$body"; then
-    CHECK_DETAIL="MCP rag_search_knowledge_base responded"
+  if jq -e '.result.isError == true' >/dev/null 2>&1 <<<"$json"; then
+    local msg; msg=$(jq -r '.result.content[0].text // "tool error"' <<<"$json" 2>/dev/null)
+    CHECK_DETAIL="MCP tool errored: ${msg}"
+    return 1
+  fi
+  # Success: tool returned a result envelope. Any content (incl. empty hits)
+  # proves the MCP -> API forwarding chain is alive.
+  if jq -e '.result.content' >/dev/null 2>&1 <<<"$json"; then
+    CHECK_DETAIL="MCP rag_search_knowledge_base responded with valid result"
     return 0
   fi
-  CHECK_DETAIL="MCP response empty/unrecognized: $(head -c 120 <<<"$body")"
+  CHECK_DETAIL="MCP response unrecognized: $(head -c 120 <<<"$json")"
   return 1
 }
 
