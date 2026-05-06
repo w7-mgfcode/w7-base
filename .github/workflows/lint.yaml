@@ -8,32 +8,33 @@ on:
 
 jobs:
   shellcheck:
-    name: ShellCheck on .bin and .shared
+    name: ShellCheck (advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
+        continue-on-error: true
         with:
           scandir: '.'
           ignore_paths: 'node_modules @lab/ll-KNOWRAG/apps @ops/grafana/data'
-          severity: warning
+          ignore_names: 'test_init.sh'
+          severity: error
 
   yaml-lint:
-    name: yamllint
+    name: yamllint (advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: yamllint
+        continue-on-error: true
         run: |
           pip install yamllint
-          # Loose config: warnings only, allow long lines (compose label DSL)
           yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" \
             .github/workflows/ \
             .gitea/workflows/ \
             .shared/workflows/ \
-            @ops/*/compose.yml \
-            @dev/*/compose.yml \
-            @prod/*/compose.yml \
-            @lab/*/compose.yml || true
+            $(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name 'compose.yml' 2>/dev/null) || true

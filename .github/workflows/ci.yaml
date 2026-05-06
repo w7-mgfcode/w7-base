@@ -67,17 +67,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify each stack has the contract files
+      - name: Verify each stack has the required contract files
         run: |
           set -e
           fail=0
           while IFS= read -r meta; do
             stack="${meta%/.w7-meta}"
-            for required in compose.yml .env.example; do
-              if [[ ! -f "$stack/$required" ]]; then
-                echo "::error file=$stack::missing $required"
-                fail=1
-              fi
-            done
+            # Required: compose.yml. (.w7-meta is implicit — we found it via find.)
+            if [[ ! -f "$stack/compose.yml" ]]; then
+              echo "::error file=$stack::missing compose.yml"
+              fail=1
+            fi
+            # Optional but recommended: .env.example (per W7-CONTRACT — "if applicable")
+            if [[ ! -f "$stack/.env.example" ]]; then
+              echo "::warning file=$stack::no .env.example (ok if the stack needs no env vars)"
+            fi
           done < <(find '@ops' '@dev' '@prod' '@lab' -mindepth 2 -maxdepth 2 -name '.w7-meta' 2>/dev/null)
           exit $fail
