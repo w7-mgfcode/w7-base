@@ -6,8 +6,11 @@ Operational guidance for deploying and maintaining the KnowRAG stack.
 
 ### 1. Configure Environment
 Copy `.env.example` to `.env` and adjust settings.
-- **JWT_SECRET**: Ensure this is at least 32 characters long.
-- **SUPABASE_SERVICE_KEY**: This is the JWT signed with `JWT_SECRET`. The default in `.env.example` works with the default secret.
+- **GITEA_TOKEN**: PAT with `repo` scope. SOPS-encrypt this.
+- **GITEA_WEBHOOK_SECRET**: HMAC secret for webhook verification.
+- **GITEA_BASE_URL**, **GITEA_KB_OWNER**, **GITEA_KB_REPO**: which Gitea repo backs the KB (defaults: `http://gitea:3000`, `knowrag/kb-default`).
+- **OLLAMA_BASE_URL**, **EMBEDDING_MODEL**: embedding provider (defaults: `http://ollama:11434`, `nomic-embed-text`).
+- **QDRANT_HOST**, **QDRANT_PORT**: vector store (defaults: `qdrant:6333`).
 
 ### 2. Launch Services
 Run the containerized stack:
@@ -15,26 +18,31 @@ Run the containerized stack:
 docker compose up -d
 ```
 This launches:
-- **knowrag-db**: PostgreSQL with pgvector.
-- **knowrag-postgrest**: REST API gateway for the DB.
-- **knowrag-proxy**: Nginx proxy for PostgREST.
-- **knowrag-api**: Main logic, crawling, ingestion, and search.
-- **knowrag-mcp**: Agentic tools server.
-- **knowrag-ui**: Operator console.
-- **ollama**: Local LLM and embedding provider.
+- **knowrag-api**: FastAPI backend — Gitea CRUD, frontmatter parsing, chunking, embedding, Qdrant upsert + query, RAG retrieval.
+- **knowrag-mcp**: FastMCP server — thin HTTP proxy to the API.
+- **knowrag-ui**: React + Vite + Tailwind operator console.
+- **gitea**: artifact source-of-truth (Markdown + YAML frontmatter; Git history = audit log).
+- **qdrant**: vector index. Collections per visibility scope (`kb_public`, `kb_private`).
+- **ollama**: local embedding provider.
+
+Optional Open WebUI chat surface:
+```bash
+docker compose --profile webui up -d
+```
 
 ### 3. Initialize Models
-To use the default configuration, pull the required models to the local Ollama instance:
+Pull the required embedding model (one-time):
 ```bash
 # For embeddings
 docker exec -it knowrag-ollama ollama pull nomic-embed-text
-# For contextual embeddings (if enabled)
+# For contextual embeddings (only if USE_CONTEXTUAL_EMBEDDINGS=true)
 docker exec -it knowrag-ollama ollama pull llama3
 ```
 
-### 4. Database Migrations
-Migrations are applied automatically during `knowrag-db` startup via `./db/migrations` volume.
-If you need to apply them manually to an external database, run the SQL files in `db/migrations/` in order (001 to 007).
+### 4. Knowledge Base Bootstrap
+The `gitea` service auto-provisions `${GITEA_KB_OWNER}/${GITEA_KB_REPO}` (default `knowrag/kb-default`) on first start, with the directory shape `prompts/`, `commands/`, `mcp/`, `hooks/`, `skills/`, `knowledge/`. Each artifact is a `.md` file with YAML frontmatter (`id`, `tags`, `status`, `version`, `owner`, `visibility`).
+
+On every push to the KB repo, Gitea fires an HMAC-signed webhook. The API verifies the signature, chunks the markdown, embeds via Ollama, and upserts into Qdrant. A periodic reconcile job catches missed events.
 
 ## Advanced Retrieval Features
 
