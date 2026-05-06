@@ -3,7 +3,7 @@ services:
     image: gitea/act_runner:latest
     container_name: act-runner
     environment:
-      - GITEA_INSTANCE_URL=${GITEA_INSTANCE_URL:-http://gitea-server:3000}
+      - GITEA_INSTANCE_URL=${GITEA_INSTANCE_URL:-http://ops-server:3000}
       - GITEA_RUNNER_REGISTRATION_TOKEN=${GITEA_RUNNER_REGISTRATION_TOKEN}
       - GITEA_RUNNER_NAME=${GITEA_RUNNER_NAME:-local-runner}
       - CONFIG_FILE=/config.yaml
