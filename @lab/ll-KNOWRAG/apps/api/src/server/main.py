@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from server.api_routes import knowledge_api, rag_api, pages_api, upload_api, artifacts_api
+from server.api_routes import knowledge_api, rag_api, pages_api, upload_api, artifacts_api, ingest_api
 from server.config.config import settings
 from server.dependencies import provider_svc, crawler_mgr
 
@@ -40,6 +40,33 @@ async def lifespan(app: FastAPI):
     # Start Crawl4AI browser
     await crawler_mgr.startup()
 
+    # Phase 8 bootstrap: ensure KB repo + directory shape + webhook on Gitea.
+    # Best-effort — log and proceed if Gitea is misconfigured so the app can
+    # still serve endpoints that don't depend on it.
+    if settings.gitea_token and settings.gitea_base_url:
+        try:
+            from server.services.storage.gitea_bootstrap import GiteaBootstrap
+            async with GiteaBootstrap(
+                base_url=settings.gitea_base_url,
+                token=settings.gitea_token,
+                owner=settings.gitea_kb_owner,
+                repo=settings.gitea_kb_repo,
+                branch=settings.gitea_kb_branch,
+            ) as bs:
+                await bs.run()
+                if settings.gitea_webhook_secret and settings.ingest_webhook_url:
+                    created = await bs.ensure_webhook(
+                        target_url=settings.ingest_webhook_url,
+                        secret=settings.gitea_webhook_secret,
+                    )
+                    logger.info(
+                        "Webhook %s on %s/%s",
+                        "created" if created else "already present",
+                        settings.gitea_kb_owner, settings.gitea_kb_repo,
+                    )
+        except Exception as exc:  # noqa: BLE001 — bootstrap is non-fatal
+            logger.warning("Gitea bootstrap skipped/failed: %s", exc)
+
     yield
 
     # Shutdown browser
@@ -62,6 +89,7 @@ app.include_router(upload_api.router)
 app.include_router(rag_api.router)
 app.include_router(pages_api.router)
 app.include_router(artifacts_api.router)
+app.include_router(ingest_api.router)
 
 @app.get("/", tags=["Root"])
 async def root():

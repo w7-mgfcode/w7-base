@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     gitea_kb_repo: str = Field(default="kb-default", validation_alias="GITEA_KB_REPO")
     gitea_kb_branch: str = Field(default="main", validation_alias="GITEA_KB_BRANCH")
     gitea_webhook_secret: str = Field(default="", validation_alias="GITEA_WEBHOOK_SECRET")
+    ingest_webhook_url: str = Field(
+        default="http://knowrag-api:8181/api/ingest/webhook",
+        validation_alias="INGEST_WEBHOOK_URL",
+    )
 
     api_host: str = "0.0.0.0"
     api_port: int = 8181

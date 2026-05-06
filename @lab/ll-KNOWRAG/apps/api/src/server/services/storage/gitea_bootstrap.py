@@ -215,17 +215,77 @@ class GiteaBootstrap:
             seeded.append(d)
         return seeded
 
-    async def run(self, *, wait: bool = True) -> dict:
-        """Execute the full bootstrap and return a summary dict."""
+    async def ensure_webhook(self, *, target_url: str, secret: str) -> bool:
+        """Idempotently ensure a Gitea push webhook exists pointing at
+        ``target_url``. Returns True if newly created, False if already
+        present (matched by config.url).
+
+        Skips silently when ``target_url`` or ``secret`` is empty.
+        """
+        if not target_url or not secret:
+            logger.info("ensure_webhook: target_url or secret missing — skipping")
+            return False
+        list_url = f"{self.base_url}/api/v1/repos/{self.owner}/{self.repo}/hooks"
+        resp = await self.client.get(list_url, headers=self._headers)
+        if resp.status_code != 200:
+            raise GiteaBootstrapError(
+                f"failed to list hooks ({resp.status_code}): {resp.text[:200]}"
+            )
+        try:
+            existing: Iterable[dict] = resp.json() or []
+        except ValueError:
+            existing = []
+        for hook in existing:
+            url = (hook.get("config") or {}).get("url")
+            if url == target_url:
+                logger.debug("Webhook already present on %s/%s", self.owner, self.repo)
+                return False
+        body = {
+            "type": "gitea",
+            "active": True,
+            "events": ["push"],
+            "config": {
+                "url": target_url,
+                "content_type": "json",
+                "secret": secret,
+                "http_method": "POST",
+            },
+        }
+        create = await self.client.post(list_url, headers=self._headers, json=body)
+        if create.status_code not in (200, 201):
+            raise GiteaBootstrapError(
+                f"failed to create webhook ({create.status_code}): {create.text[:300]}"
+            )
+        logger.info("Created push webhook on %s/%s -> %s", self.owner, self.repo, target_url)
+        return True
+
+    async def run(
+        self,
+        *,
+        wait: bool = True,
+        webhook_url: str | None = None,
+        webhook_secret: str | None = None,
+    ) -> dict:
+        """Execute the full bootstrap and return a summary dict.
+
+        When ``webhook_url`` and ``webhook_secret`` are both provided, a
+        push webhook is also ensured idempotently.
+        """
         if wait:
             await self.wait_for_ready()
         created_repo = await self.ensure_repo()
         seeded = await self.ensure_directory_shape()
+        webhook_created: bool | None = None
+        if webhook_url and webhook_secret:
+            webhook_created = await self.ensure_webhook(
+                target_url=webhook_url, secret=webhook_secret
+            )
         return {
             "repo": f"{self.owner}/{self.repo}",
             "branch": self.branch,
             "created_repo": created_repo,
             "seeded_directories": seeded,
+            "webhook_created": webhook_created,
         }
 
 
