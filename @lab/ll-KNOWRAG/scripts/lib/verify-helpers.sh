@@ -49,7 +49,10 @@ _curl_json() {
   if [[ $# -gt 0 && "$1" != "-H"* ]]; then
     body="$1"; shift
   fi
-  local args=(-sSL --max-time 15 -X "$method" -o /tmp/.verify-resp.$$ -w '%{http_code}')
+  # --post30{1,2,3} preserve POST/PUT body across 301/302/303 redirects.
+  # Without these flags, curl -L silently downgrades POST→GET on those codes
+  # (e.g. FastAPI/Starlette trailing-slash redirects), dropping the body.
+  local args=(-sSL --post301 --post302 --post303 --max-time 15 -X "$method" -o /tmp/.verify-resp.$$ -w '%{http_code}')
   while [[ $# -gt 0 ]]; do
     args+=(-H "$1"); shift
   done
@@ -80,7 +83,7 @@ mcp_call() {
   local body_file="/tmp/.mcp-body.$$"
   local init_rpc
   init_rpc='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"w7-verify","version":"1.0.0"}}}'
-  curl -sSL --max-time 15 -X POST "${MCP_URL}/mcp/" \
+  curl -sSL --post301 --post302 --post303 --max-time 15 -X POST "${MCP_URL}/mcp/" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -D "$hdr_file" -o "$body_file" \
@@ -93,7 +96,7 @@ mcp_call() {
     return 1
   fi
   # Notify initialized (best-effort; FastMCP requires this before tool calls)
-  curl -sSL --max-time 5 -X POST "${MCP_URL}/mcp/" \
+  curl -sSL --post301 --post302 --post303 --max-time 5 -X POST "${MCP_URL}/mcp/" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -H "Mcp-Session-Id: ${session_id}" \
@@ -103,7 +106,7 @@ mcp_call() {
   local rpc
   rpc=$(jq -nc --arg name "$tool_name" --argjson args "$args_json" \
     '{jsonrpc:"2.0", id:2, method:"tools/call", params:{name:$name, arguments:$args}}')
-  curl -sSL --max-time 15 -X POST "${MCP_URL}/mcp/" \
+  curl -sSL --post301 --post302 --post303 --max-time 15 -X POST "${MCP_URL}/mcp/" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -H "Mcp-Session-Id: ${session_id}" \
