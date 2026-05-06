@@ -248,9 +248,10 @@ check_search() {
   body=$(api_post "/api/artifacts/search" \
     '{"query":"verify baseline retrieval smoke","visibility":"public","top_k":10}' \
     2>>"${TRACE_LOG}") || { CHECK_DETAIL="search endpoint not reachable"; return 1; }
-  # Response shape: list of {artifact_path, score, ...}
+  # Response shape per rag_coordinator.query: {"hits":[...], "pages"?:[...]}
+  # — extract the hits array length, not the top-level object's key count.
   local hits
-  hits=$(jq 'length' <<<"$body" 2>/dev/null || echo 0)
+  hits=$(jq '(.hits // .results // []) | length' <<<"$body" 2>/dev/null || echo 0)
   if [[ "$hits" -ge 1 ]]; then
     CHECK_DETAIL="search returned ${hits} hits"
     return 0
