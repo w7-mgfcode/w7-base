@@ -23,6 +23,8 @@ w7 verify @lab/ll-KNOWRAG
 w7 verify @lab/ll-KNOWRAG --cold
 
 # Seed from your Claude Code memory directory instead of built-in fixtures
+# Requires >=4 markdown files in ${CLAUDE_PROJECT_DIR}/memory/ (1 baseline + 3 related);
+# falls back to built-in fixtures if fewer.
 w7 verify @lab/ll-KNOWRAG --seed-from-memory
 
 # Keep the temp branch + Qdrant points around for inspection
