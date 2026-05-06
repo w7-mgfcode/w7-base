@@ -15,6 +15,8 @@
 #   W7_VERIFY_RUNNING            (default 1) — assume stack is up
 #   W7_VERIFY_COLD               (default 0) — bring stack up via compose first
 #   W7_VERIFY_SEED_FROM_MEMORY   (default 0) — seed from ${CLAUDE_PROJECT_DIR}/memory/
+#                                  (CLAUDE_PROJECT_DIR must be set; falls back to
+#                                   built-in fixtures with a warning if missing)
 #   W7_VERIFY_KEEP               (default 0) — leave temp branch + points after run
 #   W7_VERIFY_OUTPUT_DIR         (default <stack>/dogfood-output/<utc>)
 #
@@ -198,7 +200,11 @@ check_ingestion() {
   # Pick fixtures: --seed-from-memory wins if available, else built-ins.
   local fixtures=()
   if [[ "${W7_VERIFY_SEED_FROM_MEMORY}" == "1" ]]; then
-    local mem_dir="${CLAUDE_PROJECT_DIR:-${HOME}/.claude/projects/-home-w7-hector-w7-localbase}/memory"
+    if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]]; then
+      log_warn "--seed-from-memory requires CLAUDE_PROJECT_DIR — falling back to built-in fixtures"
+      W7_VERIFY_SEED_FROM_MEMORY=0
+    fi
+    local mem_dir="${CLAUDE_PROJECT_DIR:-}/memory"
     TEMP_FIXTURE_DIR="${OUTPUT_DIR}/seed-from-memory"
     if seed_from_memory_dir "$mem_dir" "$TEMP_FIXTURE_DIR" "w7-mgfcode" >/tmp/.verify-mem.$$ 2>>"${TRACE_LOG}"; then
       while IFS= read -r f; do fixtures+=("$f"); done < /tmp/.verify-mem.$$
