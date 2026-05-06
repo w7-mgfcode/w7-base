@@ -233,21 +233,52 @@ check_ingestion() {
     seed_one "$f" >/dev/null || { CHECK_DETAIL="seed failed: $f"; return 1; }
   done
 
-  # Wait for Qdrant to grow
-  local target=$((PRE_QDRANT_COUNT + ${#fixtures[@]}))
-  # Wait until ALL fixtures have ingested (>=1 chunk per path), not just
-  # the first webhook to land — /related needs every sibling indexed.
-  if ! wait_until "Qdrant points_count >= ${target}" \
-    "[[ \$(curl -sS '${QDRANT_URL}/collections/kb_public' | jq -r '.result.points_count // 0') -ge ${target} ]]" \
+  # Wait until EVERY seeded artifact_path has at least one chunk indexed.
+  # Counting total points (`>= pre + N`) was too weak: a subset of fixtures
+  # could over-contribute chunks (e.g. 2 fixtures × 3 chunks = 6 points)
+  # and satisfy the threshold while other fixtures hadn't ingested yet —
+  # /related would then return fewer siblings than expected.
+  if ! wait_until "all ${#SEEDED_PATHS[@]} seeded paths indexed in Qdrant" \
+    "_all_seeded_paths_indexed" \
     60 2; then
+    local missing
+    missing=$(_seeded_paths_missing | tr '\n' ' ')
     local got; got=$(qdrant_point_count)
-    CHECK_DETAIL="Qdrant did not reach target within 60s (pre=${PRE_QDRANT_COUNT}, target>=${target}, got=${got})"
+    CHECK_DETAIL="Qdrant ingestion incomplete within 60s (pre=${PRE_QDRANT_COUNT}, points=${got}, missing: ${missing})"
     return 1
   fi
 
   local post; post=$(qdrant_point_count)
-  CHECK_DETAIL="seeded ${#fixtures[@]} artifacts; Qdrant ${PRE_QDRANT_COUNT} → ${post} points"
+  CHECK_DETAIL="seeded ${#fixtures[@]} artifacts (all paths indexed); Qdrant ${PRE_QDRANT_COUNT} → ${post} points"
   return 0
+}
+
+# Return 0 when every path in SEEDED_PATHS has at least one indexed point.
+_all_seeded_paths_indexed() {
+  for p in "${SEEDED_PATHS[@]}"; do
+    local body
+    body=$(jq -nc --arg p "$p" \
+      '{exact:true, filter:{must:[{key:"artifact_path", match:{value:$p}}]}}')
+    local count
+    count=$(curl -sS --max-time 5 -X POST "${QDRANT_URL}/collections/kb_public/points/count" \
+      -H "Content-Type: application/json" --data-binary "$body" 2>/dev/null \
+      | jq -r '.result.count // 0' 2>/dev/null || echo 0)
+    [[ "${count:-0}" -ge 1 ]] || return 1
+  done
+}
+
+# Echo each seeded path that has 0 points indexed (one per line).
+_seeded_paths_missing() {
+  for p in "${SEEDED_PATHS[@]}"; do
+    local body
+    body=$(jq -nc --arg p "$p" \
+      '{exact:true, filter:{must:[{key:"artifact_path", match:{value:$p}}]}}')
+    local count
+    count=$(curl -sS --max-time 5 -X POST "${QDRANT_URL}/collections/kb_public/points/count" \
+      -H "Content-Type: application/json" --data-binary "$body" 2>/dev/null \
+      | jq -r '.result.count // 0' 2>/dev/null || echo 0)
+    [[ "${count:-0}" -lt 1 ]] && echo "$(basename "$p")"
+  done
 }
 
 check_search() {
