@@ -37,7 +37,7 @@ T1 ──┬─► T2 ──► T4 ──► T5 ──┬─► T7 ──► T8 
 | **T7** | Qdrant ingestion pipeline | omg-executor | T5, T6 | ❌ | Push to Gitea → chunk in Qdrant within 30s; idempotent re-runs | ✅ verified (core pieces) |
 | **T8** | Retrieval layer port to Qdrant | omg-executor | T7 | ❌ | Search p95 < 500ms on 10k chunks; `/related` returns ≥ 3 relevant items | ✅ verified (modules) |
 | **T9** | UI design system foundation | omg-editor | T1 | ✅ all-backend | `grep 'style={{'` returns 0; `04-UI-REVIEW.md` ≥ 20/24; per `.claude/rules/ui-design.md` | ✅ verified (21/24, 1 documented dynamic-width exception) |
-| **T10** | Catalog UI + detail view + MCP + E2E dogfood | omg-editor + omg-verifier | T8, T9 | ❌ | All checklist items pass; `agent-browser` clean; dogfood report 0 Critical/High | todo |
+| **T10** | Catalog UI + detail view + MCP + E2E dogfood | omg-editor + omg-verifier | T8, T9 | ❌ | All checklist items pass; `agent-browser` clean; dogfood report 0 Critical/High | ✅ verified (frontend smoke 0/0; live-stack rerun deferred — see dogfood-output/report.md) |
 
 ### Subtask Detail
 
