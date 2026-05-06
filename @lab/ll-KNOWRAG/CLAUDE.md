@@ -152,4 +152,4 @@ Config is loaded via Pydantic Settings in `apps/api/src/server/config/config.py`
 
 ## Phase 7 Notes (deprecated)
 
-The Phase 7 stack used Supabase + PostgREST + pgvector for storage. SQL migrations are preserved under `db/migrations/00{1..8}_*.sql` for git-history reference. They will be removed in a follow-up cleanup slice after Phase 8 ships. Do not extend them — new schema lives in `apps/api/src/server/services/knowledge/frontmatter.py` (Pydantic models).
+The Phase 7 stack used Supabase + PostgREST + pgvector for storage. The SQL migrations under `db/migrations/00{1..8}_*.sql` were removed in #12; recover via tag `pre-knowrag-cleanup` if needed. Schema now lives in `apps/api/src/server/services/knowledge/frontmatter.py` (Pydantic models).

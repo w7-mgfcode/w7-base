@@ -50,17 +50,17 @@ These Archon modules were never ported and remain out of scope:
 - Multi-modal embeddings (text-only in v1)
 - Google / Anthropic direct providers (Ollama + OpenAI-compatible only)
 
-## SQL Migrations — Disposition
+## SQL Migrations — Removed in #12
 
-Phase 7 SQL migrations under `db/migrations/` are **kept for git-history reference only**. Phase 8 does not run them. They will be removed in a cleanup slice after Phase 8 ships.
+Phase 7 SQL migrations under `db/migrations/` were **removed in #12** (`chore(knowrag): remove deprecated Phase 7 SQL migrations`). Recover from tag `pre-knowrag-cleanup` if needed. Phase 8 does not run them.
 
-| File | Phase 7 purpose | Phase 8 status |
-|------|-----------------|----------------|
-| `001_extensions.sql` | `vector`, `pgcrypto`, `pg_trgm` | 🔴 obsolete |
-| `002_settings.sql` | `kb_settings` table | 🔴 obsolete |
-| `003_sources.sql` | `kb_sources` table | 🔴 replaced by directory shape |
-| `004_pages.sql` | `kb_pages` table | 🔴 replaced by markdown files |
-| `005_chunks.sql` | `kb_chunks` table | 🔴 replaced by Qdrant collections |
-| `006_search_functions.sql` | `match_kb_chunks`, `hybrid_search_kb_chunks` | 🔴 replaced by Qdrant client |
-| `007_contextual_schema.sql` | Contextual embedding columns | 🔴 replaced by Qdrant payload |
-| `008_source_counts_rpc.sql` | Source counts aggregation | 🔴 replaced by Qdrant payload aggregation |
+| File (removed) | Phase 7 purpose | Replaced by |
+|------|-----------------|-------------|
+| `001_extensions.sql` | `vector`, `pgcrypto`, `pg_trgm` | n/a |
+| `002_settings.sql` | `kb_settings` table | `.env` + frontmatter |
+| `003_sources.sql` | `kb_sources` table | directory shape |
+| `004_pages.sql` | `kb_pages` table | markdown files |
+| `005_chunks.sql` | `kb_chunks` table | Qdrant collections |
+| `006_search_functions.sql` | `match_kb_chunks`, `hybrid_search_kb_chunks` | Qdrant client |
+| `007_contextual_schema.sql` | Contextual embedding columns | Qdrant payload |
+| `008_source_counts_rpc.sql` | Source counts aggregation | Qdrant payload aggregation |
