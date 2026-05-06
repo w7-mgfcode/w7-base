@@ -1,5 +1,7 @@
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode } from 'react'
+import { Dialog as RadixDialog } from 'radix-ui'
 import { X } from 'lucide-react'
+import { cn } from '../../lib/cn'
 
 interface DialogProps {
   open: boolean
@@ -11,44 +13,38 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onClose, title, children, footer, maxWidth = 'max-w-lg' }: DialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [open, onClose])
-
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div
-        ref={dialogRef}
-        className={`relative bg-bg-secondary border border-border rounded-xl shadow-2xl w-full ${maxWidth} mx-4 flex flex-col max-h-[85vh]`}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button
-            onClick={onClose}
-            className="text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {children}
-        </div>
-        {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
-            {footer}
+    <RadixDialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in data-[state=closed]:fade-out" />
+        <RadixDialog.Content
+          className={cn(
+            'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
+            'bg-surface-1 border border-hairline rounded-modal shadow-2xl',
+            'w-full mx-4 flex flex-col max-h-[85vh]',
+            'focus:outline-none',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+            maxWidth,
+          )}
+        >
+          <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
+            <RadixDialog.Title className="text-lg font-semibold">{title}</RadixDialog.Title>
+            <RadixDialog.Close
+              aria-label="Close dialog"
+              className="text-fg-subtle hover:text-fg transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <X size={20} />
+            </RadixDialog.Close>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+          {footer && (
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-hairline">
+              {footer}
+            </div>
+          )}
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   )
 }

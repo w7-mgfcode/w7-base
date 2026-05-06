@@ -88,11 +88,11 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
       }
     >
       {/* Tab bar */}
-      <div className="flex border-b border-border -mx-6 px-6 mb-4">
+      <div className="flex border-b border-hairline -mx-6 px-6 mb-4">
         <button
           onClick={() => setTab('crawl')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px cursor-pointer ${
-            tab === 'crawl' ? 'text-accent border-accent' : 'text-text-secondary border-transparent'
+            tab === 'crawl' ? 'text-accent border-accent' : 'text-fg-muted border-transparent'
           }`}
         >
           Crawl Website
@@ -100,7 +100,7 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
         <button
           onClick={() => setTab('upload')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px cursor-pointer ${
-            tab === 'upload' ? 'text-accent border-accent' : 'text-text-secondary border-transparent'
+            tab === 'upload' ? 'text-accent border-accent' : 'text-fg-muted border-transparent'
           }`}
         >
           Upload Document
@@ -110,7 +110,7 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
       {tab === 'crawl' ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-text-secondary mb-1">URL</label>
+            <label className="block text-xs text-fg-muted mb-1">URL</label>
             <Input
               type="url"
               value={url}
@@ -120,26 +120,26 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Crawl Mode</label>
+            <label className="block text-xs text-fg-muted mb-1">Crawl Mode</label>
             <CrawlModeSelector value={crawlMode} onChange={setCrawlMode} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             {crawlMode === 'recursive' && (
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Max Depth</label>
+                <label className="block text-xs text-fg-muted mb-1">Max Depth</label>
                 <Input type="number" min={1} max={10} value={maxDepth} onChange={(e) => setMaxDepth(Number(e.target.value))} />
               </div>
             )}
             <div>
-              <label className="block text-xs text-text-secondary mb-1">Max Pages</label>
+              <label className="block text-xs text-fg-muted mb-1">Max Pages</label>
               <Input type="number" min={1} max={500} value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))} />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Tags</label>
+            <label className="block text-xs text-fg-muted mb-1">Tags</label>
             <TagEditor tags={tags} onChange={setTags} />
           </div>
-          {crawlError && <p className="text-sm text-error">{crawlError}</p>}
+          {crawlError && <p className="text-sm text-status-err">{crawlError}</p>}
         </div>
       ) : (
         <div className="space-y-4">
@@ -149,14 +149,14 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
             onDragLeave={() => setIsDragging(false)}
             onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) setSelectedFile(f) }}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragging ? 'border-accent bg-accent-muted' : 'border-border hover:border-border-active'
+              isDragging ? 'border-accent bg-accent-muted' : 'border-hairline hover:border-hairline-strong'
             }`}
           >
-            <Upload size={24} className="mx-auto mb-2 text-text-tertiary" />
-            <p className="text-sm text-text-secondary">
+            <Upload size={24} className="mx-auto mb-2 text-fg-subtle" />
+            <p className="text-sm text-fg-muted">
               {selectedFile ? selectedFile.name : 'Click or drag a file here'}
             </p>
-            <p className="text-xs text-text-tertiary mt-1">HTML, TXT, MD</p>
+            <p className="text-xs text-fg-subtle mt-1">HTML, TXT, MD</p>
             <input
               ref={fileRef}
               type="file"
@@ -166,10 +166,10 @@ export function AddKnowledgeDialog({ onClose, onSuccess }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Tags</label>
+            <label className="block text-xs text-fg-muted mb-1">Tags</label>
             <TagEditor tags={uploadTags} onChange={setUploadTags} />
           </div>
-          {uploadError && <p className="text-sm text-error">{uploadError}</p>}
+          {uploadError && <p className="text-sm text-status-err">{uploadError}</p>}
         </div>
       )}
     </Dialog>

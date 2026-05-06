@@ -29,14 +29,14 @@ export function TagEditor({ tags, onChange, placeholder = 'Add tag...' }: TagEdi
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 bg-bg-tertiary border border-border rounded-md px-2 py-1.5 min-h-[36px]
+    <div className="flex flex-wrap items-center gap-1.5 bg-surface-2 border border-hairline rounded-md px-2 py-1.5 min-h-[36px]
       focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/30">
       {tags.map((tag) => (
         <Badge key={tag} variant="accent" className="gap-1">
           {tag}
           <button
             onClick={() => onChange(tags.filter((t) => t !== tag))}
-            className="hover:text-text-primary cursor-pointer"
+            className="hover:text-fg cursor-pointer"
           >
             <X size={12} />
           </button>
@@ -48,7 +48,7 @@ export function TagEditor({ tags, onChange, placeholder = 'Add tag...' }: TagEdi
         onKeyDown={handleKeyDown}
         onBlur={addTag}
         placeholder={tags.length === 0 ? placeholder : ''}
-        className="flex-1 min-w-[60px] bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-tertiary"
+        className="flex-1 min-w-[60px] bg-transparent border-none outline-none text-sm text-fg placeholder:text-fg-subtle"
       />
     </div>
   )

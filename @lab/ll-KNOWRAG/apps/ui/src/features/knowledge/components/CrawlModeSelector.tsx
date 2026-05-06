@@ -28,8 +28,8 @@ export function CrawlModeSelector({ value, onChange }: CrawlModeSelectorProps) {
             className={`
               flex flex-col items-start gap-1 p-3 rounded-lg border text-left cursor-pointer transition-colors
               ${selected
-                ? 'border-accent bg-accent/5 text-text-primary'
-                : 'border-border bg-bg-tertiary text-text-secondary hover:border-border-active'
+                ? 'border-accent bg-accent/5 text-fg'
+                : 'border-hairline bg-surface-2 text-fg-muted hover:border-hairline-strong'
               }
             `}
           >
@@ -38,7 +38,7 @@ export function CrawlModeSelector({ value, onChange }: CrawlModeSelectorProps) {
               <span className="text-sm font-medium">{m.label}</span>
               {m.recommended && <Badge variant="accent">recommended</Badge>}
             </div>
-            <span className="text-xs text-text-tertiary">{m.desc}</span>
+            <span className="text-xs text-fg-subtle">{m.desc}</span>
           </button>
         )
       })}

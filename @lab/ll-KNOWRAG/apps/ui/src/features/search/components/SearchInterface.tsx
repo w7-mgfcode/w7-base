@@ -17,8 +17,8 @@ interface SearchInterfaceProps {
 
 function similarityColor(sim: number): string {
   if (sim >= 0.8) return 'text-accent'
-  if (sim >= 0.5) return 'text-warning'
-  return 'text-error'
+  if (sim >= 0.5) return 'text-status-warn'
+  return 'text-status-err'
 }
 
 export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
@@ -63,9 +63,9 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Search input */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-hairline">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -77,7 +77,7 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-3 border-b border-border space-y-3">
+      <div className="px-4 py-3 border-b border-hairline space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <Select value={mode} onChange={(e) => setMode(e.target.value as 'chunk' | 'page')} className="w-28 text-xs">
             <option value="chunk">Chunk</option>
@@ -94,12 +94,12 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
               )
             })}
           </Select>
-          <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-fg-muted cursor-pointer">
             <input type="checkbox" checked={useHybrid} onChange={(e) => setUseHybrid(e.target.checked)}
               className="accent-accent" />
             Hybrid
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-fg-muted cursor-pointer">
             <input type="checkbox" checked={useReranking} onChange={(e) => setUseReranking(e.target.checked)}
               className="accent-accent" />
             Rerank
@@ -120,7 +120,7 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
             className="flex-1"
           />
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-text-secondary">Limit</span>
+            <span className="text-xs text-fg-muted">Limit</span>
             <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="w-16 text-xs">
               {[5, 10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
             </Select>
@@ -131,7 +131,7 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
       {/* Search Error */}
       {searchMutation.isError && (
         <div className="px-4 pt-3">
-          <p className="text-sm text-error">Search failed. Check that the API is running and try again.</p>
+          <p className="text-sm text-status-err">Search failed. Check that the API is running and try again.</p>
         </div>
       )}
 
@@ -139,7 +139,7 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
       <div className="flex-1 overflow-y-auto p-4">
         {results && (
           <>
-            <p className="text-xs text-text-secondary mb-3">
+            <p className="text-xs text-fg-muted mb-3">
               {results.total_results} result{results.total_results !== 1 ? 's' : ''} in {results.processing_time_ms.toFixed(0)}ms
               {results.reranking_applied && <Badge variant="accent" className="ml-2">reranked</Badge>}
             </p>
@@ -151,11 +151,11 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
                       <span className={`text-sm font-bold ${similarityColor(r.similarity)}`}>
                         {(r.similarity * 100).toFixed(1)}%
                       </span>
-                      <span className="text-xs text-text-secondary">{r.source_id}</span>
+                      <span className="text-xs text-fg-muted">{r.source_id}</span>
                     </div>
-                    <p className="text-sm text-text-primary line-clamp-3 mb-1">{r.content}</p>
+                    <p className="text-sm text-fg line-clamp-3 mb-1">{r.content}</p>
                     {r.contextual_content && (
-                      <p className="text-xs text-text-tertiary line-clamp-1">{r.contextual_content}</p>
+                      <p className="text-xs text-fg-subtle line-clamp-1">{r.contextual_content}</p>
                     )}
                   </Card>
                 ))
@@ -166,12 +166,12 @@ export function SearchInterface({ sources = [] }: SearchInterfaceProps) {
                       <span className={`text-sm font-bold ${similarityColor(r.max_similarity)}`}>
                         {(r.max_similarity * 100).toFixed(1)}%
                       </span>
-                      <span className="text-xs text-text-secondary">{r.chunk_count} chunks</span>
+                      <span className="text-xs text-fg-muted">{r.chunk_count} chunks</span>
                     </div>
                     <p className="text-sm font-medium mb-0.5">{r.title || r.url}</p>
-                    <p className="text-xs text-text-secondary font-mono mb-2">{r.url}</p>
+                    <p className="text-xs text-fg-muted font-mono mb-2">{r.url}</p>
                     {r.chunks[0] && (
-                      <p className="text-xs text-text-tertiary line-clamp-2">{r.chunks[0].content}</p>
+                      <p className="text-xs text-fg-subtle line-clamp-2">{r.chunks[0].content}</p>
                     )}
                   </Card>
                 ))

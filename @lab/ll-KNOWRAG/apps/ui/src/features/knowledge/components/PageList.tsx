@@ -27,17 +27,17 @@ export function PageList({ sourceId }: PageListProps) {
         <div key={page.id}>
           <button
             onClick={() => setExpandedPageId(expandedPageId === page.id ? null : page.id)}
-            className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-bg-tertiary transition-colors cursor-pointer"
+            className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface-2 transition-colors cursor-pointer"
           >
             <ChevronRight
               size={14}
-              className={`text-text-tertiary transition-transform ${expandedPageId === page.id ? 'rotate-90' : ''}`}
+              className={`text-fg-subtle transition-transform ${expandedPageId === page.id ? 'rotate-90' : ''}`}
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{page.section_title || page.url}</p>
-              <p className="text-xs text-text-secondary font-mono truncate">{page.url}</p>
+              <p className="text-xs text-fg-muted font-mono truncate">{page.url}</p>
             </div>
-            <span className="text-xs text-text-tertiary whitespace-nowrap">
+            <span className="text-xs text-fg-subtle whitespace-nowrap">
               {page.word_count.toLocaleString()} words
             </span>
           </button>

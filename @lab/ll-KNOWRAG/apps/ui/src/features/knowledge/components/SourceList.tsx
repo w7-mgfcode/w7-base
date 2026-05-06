@@ -61,7 +61,7 @@ export function SourceList({
   return (
     <div className="flex flex-col h-full">
       {/* Filter bar */}
-      <div className="flex items-center gap-2 p-3 border-b border-border">
+      <div className="flex items-center gap-2 p-3 border-b border-hairline">
         <Select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
@@ -72,7 +72,7 @@ export function SourceList({
           <option value="uploaded">Uploaded</option>
         </Select>
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -80,16 +80,16 @@ export function SourceList({
             className="pl-8 text-xs"
           />
         </div>
-        <div className="flex border border-border rounded-md overflow-hidden">
+        <div className="flex border border-hairline rounded-md overflow-hidden">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-1.5 cursor-pointer ${viewMode === 'grid' ? 'bg-bg-tertiary text-text-primary' : 'text-text-tertiary hover:text-text-secondary'}`}
+            className={`p-1.5 cursor-pointer ${viewMode === 'grid' ? 'bg-surface-2 text-fg' : 'text-fg-subtle hover:text-fg-muted'}`}
           >
             <Grid3x3 size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className={`p-1.5 cursor-pointer ${viewMode === 'table' ? 'bg-bg-tertiary text-text-primary' : 'text-text-tertiary hover:text-text-secondary'}`}
+            className={`p-1.5 cursor-pointer ${viewMode === 'table' ? 'bg-surface-2 text-fg' : 'text-fg-subtle hover:text-fg-muted'}`}
           >
             <List size={14} />
           </button>

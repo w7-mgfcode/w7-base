@@ -7,11 +7,11 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: 'bg-bg-tertiary text-text-secondary border-border',
+  default: 'bg-surface-2 text-fg-muted border-hairline',
   accent: 'bg-accent-muted text-accent border-accent/20',
-  warning: 'bg-warning/10 text-warning border-warning/20',
-  error: 'bg-error/10 text-error border-error/20',
-  info: 'bg-info/10 text-info border-info/20',
+  warning: 'bg-status-warn/10 text-status-warn border-status-warn/20',
+  error: 'bg-status-err/10 text-status-err border-status-err/20',
+  info: 'bg-status-info/10 text-status-info border-status-info/20',
 }
 
 export function Badge({ variant = 'default', className = '', ...props }: BadgeProps) {

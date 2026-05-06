@@ -1,38 +1,64 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* KnowRAG Design Tokens — Emerald Operator */
+/* KnowRAG Design System — 3-layer token taxonomy.
+ * Layer 1: raw palette (literal values, not consumed directly).
+ * Layer 2: semantic tokens (referenced by components; emit utilities).
+ * Layer 3: component-specific (in component code, never global).
+ */
 @theme {
-  --color-bg-primary: #0a0a0f;
-  --color-bg-secondary: #111118;
-  --color-bg-tertiary: #1a1a24;
-  --color-border: #2a2a3a;
-  --color-border-active: #3a3a50;
-  --color-text-primary: #e4e4ed;
-  --color-text-secondary: #8888a0;
-  --color-text-tertiary: #555570;
-  --color-accent: #10b981;
-  --color-accent-hover: #059669;
-  --color-accent-muted: oklch(from #10b981 l c h / 0.12);
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  /* Surface — page/card/elevated bg tiers */
+  --color-surface-0: #0a0a0f;
+  --color-surface-1: #111118;
+  --color-surface-2: #1a1a24;
 
+  /* Foreground — text contrast tiers */
+  --color-fg: #e4e4ed;
+  --color-fg-muted: #8888a0;
+  --color-fg-subtle: #555570;
+
+  /* Hairline — borders */
+  --color-hairline: #2a2a3a;
+  --color-hairline-strong: #3a3a50;
+
+  /* Accent — single brand color, semantic strength tiers */
+  --color-accent: #10b981;
+  --color-accent-strong: #059669;
+  --color-accent-soft: oklch(from #10b981 l c h / 0.12);
+
+  /* Status — reserved for actual status, not decoration */
+  --color-status-ok: #10b981;
+  --color-status-warn: #f59e0b;
+  --color-status-err: #ef4444;
+  --color-status-info: #3b82f6;
+
+  /* Radius — semantic */
+  --radius-control: 0.375rem;
+  --radius-card: 0.5rem;
+  --radius-modal: 0.75rem;
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 250ms;
+
+  /* Typography */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* Base resets */
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background-color: var(--color-surface-0);
+  color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'tnum' 1;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -41,14 +67,13 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-hairline);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-active);
+  background: var(--color-hairline-strong);
 }
 
-/* Pulsing animation for active crawl indicator */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }

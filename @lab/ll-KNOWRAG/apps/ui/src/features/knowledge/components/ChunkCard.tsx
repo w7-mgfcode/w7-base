@@ -15,13 +15,13 @@ export function ChunkCard({ chunk }: ChunkCardProps) {
       <div className="flex items-start gap-2">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-0.5 text-text-tertiary hover:text-text-primary cursor-pointer"
+          className="mt-0.5 text-fg-subtle hover:text-fg cursor-pointer"
         >
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-text-secondary">Chunk #{chunk.chunk_number}</span>
+            <span className="text-xs font-medium text-fg-muted">Chunk #{chunk.chunk_number}</span>
             <div className="flex gap-1.5">
               {chunk.embedding_model && (
                 <Badge variant="default">{chunk.embedding_model}</Badge>
@@ -31,11 +31,11 @@ export function ChunkCard({ chunk }: ChunkCardProps) {
               )}
             </div>
           </div>
-          <p className={`text-sm text-text-primary ${expanded ? '' : 'line-clamp-2'}`}>
+          <p className={`text-sm text-fg ${expanded ? '' : 'line-clamp-2'}`}>
             {chunk.content}
           </p>
           {chunk.contextual_content && (
-            <p className={`text-xs text-text-tertiary mt-1 ${expanded ? '' : 'line-clamp-1'}`}>
+            <p className={`text-xs text-fg-subtle mt-1 ${expanded ? '' : 'line-clamp-1'}`}>
               {chunk.contextual_content}
             </p>
           )}

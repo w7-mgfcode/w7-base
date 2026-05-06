@@ -8,9 +8,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       <select
         ref={ref}
         className={`
-          bg-bg-tertiary border border-border rounded-md px-3 py-2 text-sm
-          text-text-primary
-          focus:border-accent focus:ring-1 focus:ring-accent/30 focus:outline-none
+          bg-surface-2 border border-hairline rounded-control px-3 py-2 text-sm
+          text-fg
+          focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 focus-visible:outline-none
           disabled:opacity-50 disabled:cursor-not-allowed
           ${className}
         `}

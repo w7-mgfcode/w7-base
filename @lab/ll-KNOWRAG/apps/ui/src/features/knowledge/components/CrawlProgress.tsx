@@ -29,15 +29,15 @@ export function CrawlProgress({ crawlId, onComplete }: CrawlProgressProps) {
 
   if (!progress) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-bg-secondary border-b border-border">
+      <div className="flex items-center gap-2 px-4 py-2 bg-surface-1 border-b border-hairline">
         <Spinner size={14} />
-        <span className="text-xs text-text-secondary">Loading crawl status...</span>
+        <span className="text-xs text-fg-muted">Loading crawl status...</span>
       </div>
     )
   }
 
   return (
-    <div className="px-4 py-3 bg-bg-secondary border-b border-border">
+    <div className="px-4 py-3 bg-surface-1 border-b border-hairline">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {!isTerminal && <Spinner size={14} />}
@@ -57,27 +57,27 @@ export function CrawlProgress({ crawlId, onComplete }: CrawlProgressProps) {
         )}
       </div>
 
-      <div className="w-full h-1.5 bg-bg-tertiary rounded-full overflow-hidden mb-2">
+      <div className="w-full h-1.5 bg-surface-2 rounded-full overflow-hidden mb-2">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            progress.status === 'failed' ? 'bg-error' :
-            isTerminal ? 'bg-accent' : 'bg-warning'
+            progress.status === 'failed' ? 'bg-status-err' :
+            isTerminal ? 'bg-accent' : 'bg-status-warn'
           }`}
-          style={{ width: `${pct}%` }}
+          style={{ width: `${pct}%` } as React.CSSProperties}
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-text-secondary">
+      <div className="flex items-center justify-between text-xs text-fg-muted">
         <span>{progress.completed_tasks}/{progress.total_tasks} pages</span>
         {progress.current_task_url && !isTerminal && (
           <span className="font-mono truncate max-w-[300px]">{progress.current_task_url}</span>
         )}
         {progress.failed_tasks > 0 && (
-          <span className="text-error">Failed: {progress.failed_tasks}</span>
+          <span className="text-status-err">Failed: {progress.failed_tasks}</span>
         )}
       </div>
       {progress.error && (
-        <p className="text-xs text-error mt-1">{progress.error}</p>
+        <p className="text-xs text-status-err mt-1">{progress.error}</p>
       )}
     </div>
   )

@@ -39,11 +39,11 @@ export function SourceCard({ source, selected, onClick, onRefresh, onDelete, isD
         <SourceActions onRefresh={onRefresh} onDelete={onDelete} isDeleting={isDeleting} />
       </div>
       {source.source_url && (
-        <p className="text-xs text-text-secondary font-mono truncate mb-2 ml-4">
+        <p className="text-xs text-fg-muted font-mono truncate mb-2 ml-4">
           {source.source_url}
         </p>
       )}
-      <div className="flex items-center gap-3 text-xs text-text-secondary ml-4 mb-2">
+      <div className="flex items-center gap-3 text-xs text-fg-muted ml-4 mb-2">
         <span>Pages: {pageCount}</span>
         <span className="text-border">|</span>
         <span>Chunks: {chunkCount}</span>
@@ -58,7 +58,7 @@ export function SourceCard({ source, selected, onClick, onRefresh, onDelete, isD
           )}
         </div>
       )}
-      <p className="text-xs text-text-tertiary ml-4">
+      <p className="text-xs text-fg-subtle ml-4">
         Updated {formatRelativeTime(source.updated_at)}
       </p>
     </Card>

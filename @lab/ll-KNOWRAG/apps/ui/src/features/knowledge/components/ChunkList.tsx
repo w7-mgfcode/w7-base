@@ -35,7 +35,7 @@ export function ChunkList({ sourceId }: ChunkListProps) {
         ))}
       </div>
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-3 border-t border-border text-sm">
+        <div className="flex items-center justify-center gap-3 py-3 border-t border-hairline text-sm">
           <Button
             variant="ghost"
             size="sm"
@@ -44,7 +44,7 @@ export function ChunkList({ sourceId }: ChunkListProps) {
           >
             <ChevronLeft size={14} /> Prev
           </Button>
-          <span className="text-text-secondary text-xs">
+          <span className="text-fg-muted text-xs">
             Page {currentPage} of {totalPages}
           </span>
           <Button

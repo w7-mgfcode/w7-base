@@ -7,6 +7,9 @@ export default defineConfig({
     tailwindcss(),
     react(),
   ],
+  optimizeDeps: {
+    include: ['lucide-react'],
+  },
   server: {
     port: 3737,
     proxy: {

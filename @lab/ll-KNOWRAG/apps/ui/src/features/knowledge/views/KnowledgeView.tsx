@@ -64,7 +64,7 @@ export function KnowledgeView() {
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 h-14 border-b border-border bg-bg-primary shrink-0">
+      <header className="flex items-center justify-between px-6 h-14 border-b border-hairline bg-surface-0 shrink-0">
         <h1 className="text-lg font-semibold tracking-tight">KnowRAG</h1>
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowAdd(true)} size="sm">
@@ -85,8 +85,8 @@ export function KnowledgeView() {
 
       {/* Refresh Error */}
       {refreshError && (
-        <div className="px-6 py-2 bg-error/10 border-b border-error/20">
-          <p className="text-sm text-error">Refresh failed: {refreshError}</p>
+        <div className="px-6 py-2 bg-status-err/10 border-b border-status-err/20">
+          <p className="text-sm text-status-err">Refresh failed: {refreshError}</p>
         </div>
       )}
 
@@ -109,7 +109,7 @@ export function KnowledgeView() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel — Source List */}
-          <div className="w-[380px] shrink-0 border-r border-border flex flex-col max-lg:w-full max-lg:hidden max-lg:data-[visible=true]:flex"
+          <div className="w-[380px] shrink-0 border-r border-hairline flex flex-col max-lg:w-full max-lg:hidden max-lg:data-[visible=true]:flex"
                data-visible={(!selectedSource && !searchMode) || undefined}>
             <SourceList
               sources={sources}
@@ -127,8 +127,8 @@ export function KnowledgeView() {
           <div className="flex-1 overflow-hidden flex flex-col max-lg:w-full">
             {searchMode ? (
               <>
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-border lg:hidden">
-                  <button onClick={() => setSearchMode(false)} className="text-text-secondary hover:text-text-primary cursor-pointer">
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-hairline lg:hidden">
+                  <button onClick={() => setSearchMode(false)} className="text-fg-muted hover:text-fg cursor-pointer">
                     <ArrowLeft size={18} />
                   </button>
                   <span className="text-sm font-medium">Search</span>
@@ -145,7 +145,7 @@ export function KnowledgeView() {
               />
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-text-tertiary text-sm">Select a source to view details</p>
+                <p className="text-fg-subtle text-sm">Select a source to view details</p>
               </div>
             )}
           </div>

@@ -40,25 +40,25 @@ export function SourceInfoPanel({ source }: SourceInfoPanelProps) {
   return (
     <div className="p-5 space-y-4">
       <div>
-        <label className="block text-xs text-text-secondary mb-1">Title</label>
+        <label className="block text-xs text-fg-muted mb-1">Title</label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div>
-        <label className="block text-xs text-text-secondary mb-1">Display Name</label>
+        <label className="block text-xs text-fg-muted mb-1">Display Name</label>
         <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       </div>
       <div>
-        <label className="block text-xs text-text-secondary mb-1">Tags</label>
+        <label className="block text-xs text-fg-muted mb-1">Tags</label>
         <TagEditor tags={tags} onChange={setTags} />
       </div>
       <div>
-        <label className="block text-xs text-text-secondary mb-1">Source URL</label>
+        <label className="block text-xs text-fg-muted mb-1">Source URL</label>
         <div className="flex items-center gap-2">
-          <span className="flex-1 text-sm font-mono text-text-secondary bg-bg-tertiary rounded-md px-3 py-2 truncate">
+          <span className="flex-1 text-sm font-mono text-fg-muted bg-surface-2 rounded-md px-3 py-2 truncate">
             {source.source_url || '—'}
           </span>
           {source.source_url && (
-            <button onClick={handleCopy} className="text-text-tertiary hover:text-text-primary cursor-pointer">
+            <button onClick={handleCopy} className="text-fg-subtle hover:text-fg cursor-pointer">
               {copied ? <Check size={16} className="text-accent" /> : <Copy size={16} />}
             </button>
           )}
@@ -66,12 +66,12 @@ export function SourceInfoPanel({ source }: SourceInfoPanelProps) {
       </div>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span className="block text-xs text-text-secondary">Created</span>
-          <span className="text-text-primary">{new Date(source.created_at).toLocaleString()}</span>
+          <span className="block text-xs text-fg-muted">Created</span>
+          <span className="text-fg">{new Date(source.created_at).toLocaleString()}</span>
         </div>
         <div>
-          <span className="block text-xs text-text-secondary">Updated</span>
-          <span className="text-text-primary">{new Date(source.updated_at).toLocaleString()}</span>
+          <span className="block text-xs text-fg-muted">Updated</span>
+          <span className="text-fg">{new Date(source.updated_at).toLocaleString()}</span>
         </div>
       </div>
       {hasChanges && (

@@ -31,8 +31,8 @@ export function SourceDetail({ source, activeCrawlIds, onCrawlComplete, onRefres
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-border">
-        <button onClick={onBack} className="lg:hidden text-text-secondary hover:text-text-primary cursor-pointer">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-hairline">
+        <button onClick={onBack} className="lg:hidden text-fg-muted hover:text-fg cursor-pointer">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
@@ -40,7 +40,7 @@ export function SourceDetail({ source, activeCrawlIds, onCrawlComplete, onRefres
             {source.source_display_name || source.title || source.source_id}
           </h2>
           {source.source_url && (
-            <p className="text-xs text-text-secondary font-mono truncate">{source.source_url}</p>
+            <p className="text-xs text-fg-muted font-mono truncate">{source.source_url}</p>
           )}
         </div>
         <Button variant="secondary" size="sm" onClick={() => onRefresh?.(source.source_id)}>
