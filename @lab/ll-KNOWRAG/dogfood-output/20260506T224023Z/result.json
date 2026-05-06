@@ -1,0 +1,57 @@
+{
+  "stack": "@lab/ll-KNOWRAG",
+  "started_at": "2026-05-06T22:40:23Z",
+  "finished_at": "2026-05-06T22:40:27Z",
+  "duration_ms": 3972,
+  "exit_code": 0,
+  "summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "checks": [
+    {
+      "id": "api.health",
+      "status": "pass",
+      "duration_ms": 30,
+      "detail": "API healthy at http://localhost:8181",
+      "severity": "critical"
+    },
+    {
+      "id": "gitea.kb_repo_exists",
+      "status": "pass",
+      "duration_ms": 49,
+      "detail": "KB repo exists: knowrag/kb-default",
+      "severity": "critical"
+    },
+    {
+      "id": "ingestion.seed_and_grow",
+      "status": "pass",
+      "duration_ms": 3319,
+      "detail": "seeded 4 artifacts; Qdrant 0 → 10 points",
+      "severity": "high"
+    },
+    {
+      "id": "search.api_returns_hits",
+      "status": "pass",
+      "duration_ms": 181,
+      "detail": "search returned 10 hits",
+      "severity": "high"
+    },
+    {
+      "id": "related.api_returns_3_plus",
+      "status": "pass",
+      "duration_ms": 97,
+      "detail": "/related returned 3 sibling artifacts",
+      "severity": "high"
+    },
+    {
+      "id": "mcp.search_returns_hits",
+      "status": "pass",
+      "duration_ms": 149,
+      "detail": "MCP rag_search_knowledge_base responded with valid result",
+      "severity": "medium"
+    }
+  ]
+}

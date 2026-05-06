@@ -42,10 +42,10 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
   - Feature flags wired into config (`USE_HYBRID_SEARCH`, `USE_RERANKING`, etc.)
 - **Phase 8 — Re-architecture**: Shipped (T1–T10 verified).
   - Storage backend pivoted from Supabase/PostgREST/pgvector to **Gitea + Qdrant + Ollama**
-  - HMAC-verified Gitea webhook ingestion modules (chunker, HMAC, indexer, orchestrator) — **route binding pending: see [#19](https://github.com/w7-mgfcode/w7-base/issues/19)**
+  - HMAC-verified Gitea webhook ingestion (chunker, HMAC, indexer, orchestrator) — fully wired in [#21](https://github.com/w7-mgfcode/w7-base/pull/21)
   - Frontmatter Pydantic schema (tags/status/version/owner/visibility)
   - Tailwind v4 design system + Stitch primitives + card-grid catalog UI
-  - **End-to-end verify harness** (`w7 verify @lab/ll-KNOWRAG`) — first live-stack baseline: **3/6 pass** (`dogfood-output/20260506T213008Z/`). API, Gitea, and MCP layers are healthy; the 3 failures all stem from #19.
+  - **End-to-end verify harness** (`w7 verify @lab/ll-KNOWRAG`) — live-stack baseline: **6/6 pass** (`dogfood-output/20260506T224023Z/`). Full Phase 8 contract verified: `api.health` → `gitea.kb_repo_exists` → `ingestion.seed_and_grow` (4 artifacts → 10 Qdrant points in 3.3s) → `search` → `/related` (3 siblings) → MCP. Total run: ~4s.
 - **Ready for**: Local dev execution, testing, and agent integration.
 
 ## License
