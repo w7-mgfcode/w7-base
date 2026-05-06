@@ -17,6 +17,7 @@ from server.services.crawling.crawling_service import CrawlingService
 from server.services.storage.storage_operations import StorageOperations
 from server.services.storage.gitea_storage import GiteaStorage
 from server.services.knowledge.ingestion_service import IngestionService
+from server.services.knowledge.ingest_pipeline import IngestionPipeline
 from server.services.embeddings.llm_provider_service import LLMProviderService
 from server.services.embeddings.embedding_service import EmbeddingService
 from server.services.search.vector_search_strategy import VectorSearchStrategy
@@ -126,6 +127,28 @@ def get_rag_coordinator() -> RagCoordinator:
 
 def get_embedding_svc() -> EmbeddingService:
     return embedding_svc
+
+
+async def get_ingestion_pipeline():
+    """Yield an `IngestionPipeline` bound to a per-request `GiteaStorage`.
+
+    The Gitea HTTP client is owned by `GiteaStorage` and must be closed
+    after the request completes — we use a generator dependency so FastAPI
+    runs the teardown.
+    """
+    storage = GiteaStorage(
+        base_url=settings.gitea_base_url,
+        token=settings.gitea_token,
+        owner=settings.gitea_kb_owner,
+        repo=settings.gitea_kb_repo,
+        branch=settings.gitea_kb_branch,
+    )
+    async with storage:
+        yield IngestionPipeline(
+            storage=storage,
+            indexer=qdrant_indexer,
+            embedder=embedding_svc,
+        )
 
 
 def get_settings():
