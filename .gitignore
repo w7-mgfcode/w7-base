@@ -18,3 +18,23 @@ data/
 .age_key.txt
 .bin/age*
 .bin/sops
+
+# Agent artifacts & Testing outputs
+.agents/
+.claude/
+.memo/
+.planning/
+.w7-meta
+dogfood-output/
+PRPs/
+**/node_modules/
+**/.omg/
+
+# Integration & Development scripts
+*.sh
+*.py
+w7.integrated
+w7.tmp
+w7_new
+w7_top.sh
+w7.bak

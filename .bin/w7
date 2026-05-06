@@ -12,6 +12,8 @@ W7_GLOBAL_ENV="${W7_ROOT}/.shared/global.env"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+DIM='\033[2m'
 NC='\033[0m'
 
 usage() {
@@ -21,9 +23,16 @@ usage() {
   echo "Flags:"
   echo "  --yes, -y       Skip interactive prompts (e.g., for @prod)"
   echo "  --force, -f     Force execution (bypasses some safety checks)"
+  echo "  --json          Machine-readable output"
+  echo "  --services      Show detailed service breakdown (for 'top')"
+  echo "  --wide          Alias for --services with extra columns"
   echo ""
   echo "Commands:"
-  echo "  up <stack>      Start a stack (wraps docker compose up -d)"
+  echo "  up <stack|all>  Start a stack (wraps docker compose up -d)"
+  echo "  down <stack|all> Stop a stack (wraps docker compose down)"
+  echo "  top             Runtime resource visibility (grouped by zone/stack)"
+  echo "  stats           Alias for 'top'"
+  echo "  ps --res        Alias for 'top'"
   echo "  init <@zone/stack> Scaffold a new stack directory"
   echo "  doctor          Validate W7-Base environment and stack contract"
   echo "  secret <cmd> <stack> Manage encrypted secrets (edit, decrypt)"
@@ -31,6 +40,7 @@ usage() {
   echo "  stat            Show health matrix for all zones"
   echo "  backup <stack>  Archive stack data/ directory"
   echo "  logs <stack>    Tail zone-aware logs"
+  echo "  net             Network port mapping visibility"
   echo "  prune           Cleanup unused Docker resources (with guardrails)"
   echo "  resolve <stack> Internal: print resolved stack path"
 }
@@ -42,6 +52,8 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
 W7_YES=0
 W7_FORCE=0
 W7_JSON=0
+W7_SERVICES=0
+W7_WIDE=0
 
 # Simple flag parser
 POSITIONAL_ARGS=()
@@ -57,6 +69,15 @@ while [[ $# -gt 0 ]]; do
       ;;
     --json)
       W7_JSON=1
+      shift
+      ;;
+    --services)
+      W7_SERVICES=1
+      shift
+      ;;
+    --wide)
+      W7_SERVICES=1
+      W7_WIDE=1
       shift
       ;;
     *)
@@ -111,7 +132,8 @@ setup_env() {
   local zone_clean="${zone#@}"
 
   # W7-Base Contract: Daemon Isolation
-  export COMPOSE_PROJECT_NAME="${zone_clean}-${stack}"
+  local project_name="${zone_clean}-${stack}"
+  export COMPOSE_PROJECT_NAME=$(echo "$project_name" | tr '[:upper:]' '[:lower:]')
 
   # W7-Base Contract: Protected @prod
   if [[ "$zone" == "@prod" && "$W7_CMD" == "up" ]]; then
@@ -179,7 +201,244 @@ run_compose() {
   docker compose "${compose_args[@]}" "$@"
 }
 
+# --- Runtime Resource Visibility Implementation ---
+
+render_top_table() {
+  local gpu_total_load="-"
+  if command -v nvidia-smi &>/dev/null; then
+    gpu_total_load=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo "-")
+  fi
+
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}")
+  local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
+
+  to_mb() {
+    local raw="$1"
+    local val=$(echo "$raw" | sed 's/[^0-9.]//g')
+    local unit=$(echo "$raw" | sed 's/[0-9.]//g' | tr '[:upper:]' '[:lower:]' | xargs)
+    if [[ "$unit" == *"gib"* || "$unit" == "gb" ]]; then echo "$val * 1024" | bc;
+    elif [[ "$unit" == *"mib"* || "$unit" == "mb" || -z "$unit" ]]; then echo "$val" | bc;
+    elif [[ "$unit" == *"kib"* || "$unit" == "kb" ]]; then echo "$val / 1024" | bc -l;
+    elif [[ "$unit" == "b" ]]; then echo "$val / 1048576" | bc -l;
+    else echo "0"; fi
+  }
+
+  get_zone() {
+    local p="$1"
+    if [[ "$p" == ops-* ]]; then echo "@ops";
+    elif [[ "$p" == dev-* ]]; then echo "@dev";
+    elif [[ "$p" == prod-* ]]; then echo "@prod";
+    elif [[ "$p" == lab-* ]]; then echo "@lab";
+    else echo "[ORPHAN]"; fi
+  }
+
+  declare -A zone_cpu zone_mem zone_gpu zone_count zone_svcs
+  local g_cpu=0; local g_mem=0; local g_gpu=0; local g_count=0
+
+  while IFS='|' read -r id name project service status hide managed; do
+    if [[ "$hide" == "true" ]]; then continue; fi
+    local zone=$(get_zone "$project")
+    local stat_line=$(echo "$stats" | grep "^$id" || true)
+    
+    local cpu=0; local mem=0; local net="-"
+    if [[ -n "$stat_line" ]]; then
+      cpu=$(echo "$stat_line" | cut -d'|' -f2 | tr -d '%')
+      local mem_raw=$(echo "$stat_line" | cut -d'|' -f3 | cut -d'/' -f1 | xargs)
+      mem=$(to_mb "$mem_raw")
+      net=$(echo "$stat_line" | cut -d'|' -f4)
+    fi
+
+    local gpu=0
+    if [[ "$gpu_total_load" != "-" && "$status" == "Up"* ]]; then gpu="$gpu_total_load"; fi
+
+    zone_cpu["$zone"]=$(echo "${zone_cpu["$zone"]:-0} + $cpu" | bc)
+    zone_mem["$zone"]=$(echo "${zone_mem["$zone"]:-0} + $mem" | bc)
+    zone_gpu["$zone"]=$(echo "${zone_gpu["$zone"]:-0} + $gpu" | bc)
+    zone_count["$zone"]=$(( ${zone_count["$zone"]:-0} + 1 ))
+
+    g_cpu=$(echo "$g_cpu + $cpu" | bc)
+    g_mem=$(echo "$g_mem + $mem" | bc)
+    g_gpu=$(echo "$g_gpu + $gpu" | bc)
+    g_count=$((g_count + 1))
+
+    if [[ "$W7_SERVICES" == "1" ]]; then
+      local display_svc="${service:-$name}"
+      if [[ "$managed" == "true" ]]; then display_svc="${GREEN}*${NC}${display_svc}"; fi
+      local svc_line
+      if [[ "$W7_WIDE" == "1" ]]; then
+        svc_line=$(printf "  %-29b | %8.1f%% | %10.1f MiB | %5.1f%% | %-15s | %-20s" "$display_svc" "$cpu" "$mem" "$gpu" "$net" "$name")
+      else
+        svc_line=$(printf "  %-29b | %8.1f%% | %10.1f MiB | %5.1f%%" "$display_svc" "$cpu" "$mem" "$gpu")
+      fi
+      zone_svcs["$zone"]+="$svc_line"$'\n'
+    fi
+  done <<< "$containers"
+
+  # Print Global Summary
+  printf "${YELLOW}GLOBAL TOTAL: CPU:%-6.1f%%  MEM:%-10s  GPU:%-6.1f%%  Containers:%-3d${NC}\n\n" \
+    "$g_cpu" "$(echo "$g_mem" | awk '{printf "%.1f MiB", $1}')" "$g_gpu" "$g_count"
+
+  if [[ "$W7_SERVICES" == "1" ]]; then
+    if [[ "$W7_WIDE" == "1" ]]; then
+      printf "${GREEN}%-31s | %9s | %14s | %6s | %-15s | %-20s${NC}\n" "SERVICE" "CPU%" "MEM" "GPU%" "NET I/O" "CONTAINER"
+      local sep="----------------------------------------------------------------------------------------------------------------------------"
+    else
+      printf "${GREEN}%-31s | %9s | %14s | %6s${NC}\n" "SERVICE" "CPU%" "MEM" "GPU%"
+      local sep="--------------------------------------------------------------------------------"
+    fi
+    echo "$sep"
+  else
+    printf "${GREEN}%-10s | %10s | %14s | %8s | %5s${NC}\n" "ZONE" "CPU%" "MEM" "GPU%" "CNT"
+    local sep="--------------------------------------------------------------------------------"
+    echo "$sep"
+  fi
+
+  for z in @ops @dev @prod @lab "[ORPHAN]"; do
+  if [[ ${zone_count["$z"]:-0} -eq 0 ]]; then continue; fi
+  if [[ "$W7_SERVICES" == "1" ]]; then
+    echo -e "${BLUE}$z${NC}"
+    echo -ne "${zone_svcs["$z"]}"
+    printf "${DIM}%-31s | %8.1f%% | %10.1f MiB | %5.1f%%${NC}\n" "  TOTAL" "${zone_cpu["$z"]}" "${zone_mem["$z"]}" "${zone_gpu["$z"]}"
+    echo "$sep"
+  else
+    printf "%-10s | %9.1f%% | %10.1f MiB | %7.1f%% | %5d\n" "$z" "${zone_cpu["$z"]}" "${zone_mem["$z"]}" "${zone_gpu["$z"]}" "${zone_count["$z"]}"
+  fi
+  done
+  }
+
+  render_net_table() {
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Ports}}|{{.Label \"w7.visibility.hide\"}}")
+
+  get_zone() {
+  local p="$1"
+  if [[ "$p" == ops-* ]]; then echo "@ops";
+  elif [[ "$p" == dev-* ]]; then echo "@dev";
+  elif [[ "$p" == prod-* ]]; then echo "@prod";
+  elif [[ "$p" == lab-* ]]; then echo "@lab";
+  else echo "[ORPHAN]"; fi
+  }
+
+  declare -A zone_net
+  while IFS='|' read -r id name project service ports hide; do
+  if [[ "$hide" == "true" ]]; then continue; fi
+  local zone=$(get_zone "$project")
+  local display_svc="${service:-$name}"
+
+  # Process ports: "0.0.0.0:80->80/tcp, :::80->80/tcp" -> "80:80"
+  # Or "80/tcp" (internal)
+  local mapping=""
+  if [[ -z "$ports" ]]; then
+    mapping="${DIM}none${NC}"
+  else
+    # Split by comma
+    IFS=',' read -ra ADDR <<< "$ports"
+    for p in "${ADDR[@]}"; do
+      p=$(echo "$p" | xargs)
+      if [[ "$p" == *"->"* ]]; then
+        local host_port=$(echo "$p" | cut -d'->' -f1 | rev | cut -d':' -f1 | rev)
+        local cont_port=$(echo "$p" | cut -d'->' -f2 | cut -d'/' -f1)
+        mapping+="${host_port}:${cont_port} "
+      else
+        local int_port=$(echo "$p" | cut -d'/' -f1)
+        mapping+="${DIM}${int_port}(int)${NC} "
+      fi
+    done
+  fi
+
+  local line=$(printf "  %-25s | %-25s | %b" "$project" "$display_svc" "$mapping")
+  zone_net["$zone"]+="$line"$'\n'
+  done <<< "$containers"
+
+  printf "${GREEN}%-27s | %-25s | %-20s${NC}\n" "STACK/PROJECT" "SERVICE" "PORTS (Host:Cont)"
+  echo "--------------------------------------------------------------------------------"
+  for z in @ops @dev @prod @lab "[ORPHAN]"; do
+  if [[ -n "${zone_net["$z"]}" ]]; then
+    echo -e "${BLUE}$z${NC}"
+    echo -ne "${zone_net["$z"]}"
+  fi
+  done
+  }
+
+  render_top_json() {
+  local gpu_total_load="-"
+  if command -v nvidia-smi &>/dev/null; then
+  gpu_total_load=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo "-")
+  fi
+
+  get_zone() {
+  local p="$1"
+  if [[ "$p" == ops-* ]]; then echo "@ops";
+  elif [[ "$p" == dev-* ]]; then echo "@dev";
+  elif [[ "$p" == prod-* ]]; then echo "@prod";
+  elif [[ "$p" == lab-* ]]; then echo "@lab";
+  else echo "[ORPHAN]"; fi
+  }
+
+  echo "["
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Ports}}")
+  local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
+
+  local first=1
+  while IFS='|' read -r id name project service status hide managed ports; do
+  if [[ $first -eq 0 ]]; then echo ","; fi
+  first=0
+
+  local zone=$(get_zone "$project")
+  local stat_line=$(echo "$stats" | grep "^$id" || true)
+  local cpu="0%"; local mem="0B"; local net="0B/0B"
+  if [[ -n "$stat_line" ]]; then
+    cpu=$(echo "$stat_line" | cut -d'|' -f2)
+    mem=$(echo "$stat_line" | cut -d'|' -f3 | cut -d'/' -f1 | xargs)
+    net=$(echo "$stat_line" | cut -d'|' -f4)
+  fi
+
+  local json_project="\"$project\""
+  if [[ -z "$project" ]]; then json_project="null"; fi
+  local json_hide="false"; if [[ "$hide" == "true" ]]; then json_hide="true"; fi
+  local json_managed="false"; if [[ "$managed" == "true" ]]; then json_managed="true"; fi
+  local json_ports=$(echo "$ports" | sed 's/"/\\"/g')
+
+  echo "  {"
+  echo "    \"id\": \"$id\","
+  echo "    \"name\": \"$name\","
+  echo "    \"project\": $json_project,"
+  echo "    \"zone\": \"$zone\","
+  echo "    \"status\": \"$status\","
+  echo "    \"cpu_perc\": \"$cpu\","
+  echo "    \"mem_usage\": \"$mem\","
+  echo "    \"net_io\": \"$net\","
+  echo "    \"port_mapping\": \"$json_ports\","
+  echo "    \"hide\": $json_hide,"
+  echo "    \"managed\": $json_managed,"
+  echo "    \"gpu_perc\": \"${gpu_total_load}%\""
+  echo "  }"
+  done <<< "$containers"
+  echo "]"
+  }
 case "$W7_CMD" in
+  top|stats)
+    if [[ "$W7_JSON" == "1" ]]; then
+      render_top_json
+    else
+      echo -e "${GREEN}W7 Runtime Resource Visibility${NC}"
+      render_top_table
+    fi
+    ;;
+  net)
+    if [[ "$W7_JSON" == "1" ]]; then
+      render_top_json
+    else
+      echo -e "${GREEN}W7 Network Port Visibility${NC}"
+      render_net_table
+    fi
+    ;;
+  ps)
+    if [[ "$TARGET" == "--res" ]]; then
+      if [[ "$W7_JSON" == "1" ]]; then render_top_json; else echo -e "${GREEN}W7 Runtime Resource Visibility${NC}"; render_top_table; fi
+    else
+      log_error "Usage: w7 ps --res"
+    fi
+    ;;
   secret)
     SUBCMD=$2
     TARGET=$3
@@ -300,11 +559,56 @@ EOF
     fi
     ;;
   up)
-    SPATH=$(resolve_stack "$TARGET")
-    setup_env "$SPATH"
-    echo -e "${GREEN}Booting stack: ${COMPOSE_PROJECT_NAME}${NC}"
-    docker network inspect w7-ingress >/dev/null 2>&1 || docker network create w7-ingress
-    run_compose up -d
+    if [[ "$TARGET" == "all" ]]; then
+      # Start @ops first, then others
+      echo -e "${YELLOW}Starting ALL stacks...${NC}"
+      ops_stacks=($(find "${W7_ROOT}/@ops" -maxdepth 2 -mindepth 2 -type f -name ".w7-meta" | awk -F'/' '{print "@ops/"$(NF-1)}'))
+      other_stacks=($(find "${W7_ROOT}" -maxdepth 3 -mindepth 3 -type f -name ".w7-meta" | grep -v "/@ops/" | awk -F'/' '{print $(NF-2)"/"$(NF-1)}'))
+
+      for s in "${ops_stacks[@]}" "${other_stacks[@]}"; do
+        echo -e "\n${BLUE}>>> Up: $s${NC}"
+        (
+          # Check if we need to pass --yes to ourselves for @prod
+          extra_args=""
+          if [[ "$W7_YES" == "1" ]]; then extra_args="--yes"; fi
+          if [[ "$W7_FORCE" == "1" ]]; then extra_args="${extra_args} --force"; fi
+          
+          # Resolve and setup
+          spath=$(resolve_stack "$s")
+          setup_env "$spath"
+          docker network inspect w7-ingress >/dev/null 2>&1 || docker network create w7-ingress
+          run_compose up -d
+        )
+      done
+    else
+      SPATH=$(resolve_stack "$TARGET")
+      setup_env "$SPATH"
+      echo -e "${GREEN}Booting stack: ${COMPOSE_PROJECT_NAME}${NC}"
+      docker network inspect w7-ingress >/dev/null 2>&1 || docker network create w7-ingress
+      run_compose up -d
+    fi
+    ;;
+  down)
+    if [[ "$TARGET" == "all" ]]; then
+      # Stop others first, then @ops last
+      echo -e "${YELLOW}Stopping ALL stacks...${NC}"
+      ops_stacks=($(find "${W7_ROOT}/@ops" -maxdepth 2 -mindepth 2 -type f -name ".w7-meta" | awk -F'/' '{print "@ops/"$(NF-1)}'))
+      other_stacks=($(find "${W7_ROOT}" -maxdepth 3 -mindepth 3 -type f -name ".w7-meta" | grep -v "/@ops/" | awk -F'/' '{print $(NF-2)"/"$(NF-1)}'))
+      
+      for s in "${other_stacks[@]}" "${ops_stacks[@]}"; do
+        echo -e "\n${BLUE}>>> Down: $s${NC}"
+        (
+          spath=$(resolve_stack "$s")
+          setup_env "$spath"
+          run_compose down
+        )
+      done
+    else
+      SPATH=$(resolve_stack "$TARGET")
+      setup_env "$SPATH"
+      echo -e "${GREEN}Stopping stack: ${COMPOSE_PROJECT_NAME}${NC}"
+      run_compose down
+    fi
     ;;
   logs)
     SPATH=$(resolve_stack "$TARGET")
@@ -333,9 +637,10 @@ EOF
           if [ -f "$stack_path/.w7-meta" ]; then
             stack=$(basename "$stack_path")
             proj_name="${zone_clean}-${stack}"
+            proj_name_lower=$(echo "$proj_name" | tr '[:upper:]' '[:lower:]')
             
             # Get running container count for the project
-            running=$(docker ps --filter "label=com.docker.compose.project=$proj_name" --format "{{.Names}}" | wc -l)
+            running=$(docker ps --filter "label=com.docker.compose.project=$proj_name_lower" --format "{{.Names}}" | wc -l)
             
             status_txt="Down"
             if [ "$running" -gt 0 ]; then
