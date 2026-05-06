@@ -26,7 +26,7 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
    ```bash
    w7 verify @lab/ll-KNOWRAG
    ```
-   Six checks (api.health → gitea → ingestion → search → /related → MCP) run in ~60 seconds against a live stack. Results land in `dogfood-output/<utc-timestamp>/`. See [`docs/runbook.md`](docs/runbook.md#end-to-end-verification-w7-verify-lablknowrag) for run modes and troubleshooting.
+   Six checks (api.health → gitea → ingestion → search → /related → MCP) run in ~60 seconds against a live stack. Results land in `dogfood-output/<utc-timestamp>/`. See [`docs/runbook.md`](docs/runbook.md) (section: "End-to-End Verification") for run modes and troubleshooting.
 
 ## Current Status
 - **Core Pipeline**: Implemented and Verified.

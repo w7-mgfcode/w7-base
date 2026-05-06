@@ -263,7 +263,7 @@ The harness is non-destructive by default: a temp branch (`verify-<utc-ts>-<pid>
 
 Each run writes `dogfood-output/<utc-timestamp>/{result.json,report.md,curl-trace.log}`. The JSON envelope is suitable for CI gating (`exit_code == 0` ∧ `summary.{critical,high}` both 0).
 
-Operator guide: [`docs/runbook.md`](docs/runbook.md#end-to-end-verification-w7-verify-lablknowrag) and [`scripts/README.md`](scripts/README.md).
+Operator guide: [`docs/runbook.md`](docs/runbook.md) (section: "End-to-End Verification") and [`scripts/README.md`](scripts/README.md).
 
 ## 10. Security Model
 
