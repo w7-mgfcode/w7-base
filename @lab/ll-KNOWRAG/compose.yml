@@ -1,20 +1,138 @@
+# ll-KNOWRAG — Phase 8 topology (Gitea + Qdrant)
+#
+# Source-of-truth for artifacts: Gitea (Git repo, Markdown + frontmatter)
+# Source-of-truth for vector index: Qdrant (collections per visibility scope)
+# Embeddings: Ollama (local, default model nomic-embed-text)
+#
+# Start order (gated by healthchecks):
+#   ollama, qdrant, gitea  (independent infrastructure, parallel)
+#   ↓
+#   knowrag-api            (waits for all three healthy)
+#   ↓
+#   knowrag-mcp, knowrag-ui (wait for api healthy)
+#
+# Optional: open-webui (depends on ollama only). Enable via:
+#   docker compose --profile webui up -d
+
 services:
+  # ── Infrastructure ──────────────────────────────────────────────────────
+
+  ollama:
+    image: ollama/ollama:0.5.4
+    container_name: knowrag-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - knowrag-net
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    container_name: knowrag-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - knowrag-net
+
+  gitea:
+    image: gitea/gitea:1.22.4
+    container_name: knowrag-gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__server__ROOT_URL=${GITEA_ROOT_URL:-http://localhost:3030/}
+      - GITEA__server__DOMAIN=${GITEA_DOMAIN:-localhost}
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__server__SSH_PORT=22
+      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__service__REQUIRE_SIGNIN_VIEW=false
+      - GITEA__webhook__ALLOWED_HOST_LIST=*
+    ports:
+      - "${GITEA_HTTP_PORT:-3030}:3000"
+      - "${GITEA_SSH_PORT:-2222}:22"
+    volumes:
+      - ./data/gitea:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/healthz | grep -q pass || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - knowrag-net
+
+  # ── Application ─────────────────────────────────────────────────────────
+
   knowrag-api:
     build: ./apps/api
-    shm_size: '256m'
     image: knowrag-api:latest
     container_name: knowrag-api
-    command: ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8181", "--log-level", "${LOG_LEVEL:-info}"]
+    shm_size: '256m'
+    command:
+      - uvicorn
+      - server.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8181"
+      - --log-level
+      - "${LOG_LEVEL:-info}"
     ports:
       - "${API_PORT:-8181}:8181"
     environment:
+      # Vector store
       - QDRANT_HOST=${QDRANT_HOST:-qdrant}
       - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_GRPC_PORT=${QDRANT_GRPC_PORT:-6334}
+      # Embeddings
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-ollama}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      # Gitea (artifact source-of-truth)
+      - GITEA_BASE_URL=${GITEA_BASE_URL:-http://gitea:3000}
+      - GITEA_TOKEN=${GITEA_TOKEN:?GITEA_TOKEN required for KB CRUD via Gitea API}
+      - GITEA_KB_OWNER=${GITEA_KB_OWNER:-knowrag}
+      - GITEA_KB_REPO=${GITEA_KB_REPO:-kb-default}
+      - GITEA_KB_BRANCH=${GITEA_KB_BRANCH:-main}
+      # Webhook security
+      - GITEA_WEBHOOK_SECRET=${GITEA_WEBHOOK_SECRET:?GITEA_WEBHOOK_SECRET required for webhook HMAC verification}
+      # Service
       - API_PORT=${API_PORT:-8181}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
-      - ollama
-      - qdrant
+      ollama:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      gitea:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8181/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
     networks:
       - knowrag-net
 
@@ -28,56 +146,45 @@ services:
       - API_SERVICE_URL=${API_SERVICE_URL:-http://knowrag-api:8181}
       - MCP_PORT=${MCP_PORT:-8051}
     depends_on:
-      - knowrag-api
+      knowrag-api:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - knowrag-net
 
   knowrag-ui:
-    image: knowrag-ui:latest
-    container_name: knowrag-ui
-    ports:
-      - "${UI_PORT:-3737}:80"
     build:
       context: ./apps/ui
       args:
         VITE_API_BASE_URL: http://localhost:${API_PORT:-8181}
+    image: knowrag-ui:latest
+    container_name: knowrag-ui
+    ports:
+      - "${UI_PORT:-3737}:80"
     depends_on:
-      - knowrag-api
+      knowrag-api:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - knowrag-net
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: knowrag-qdrant
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-      - "${QDRANT_GRPC_PORT:-6334}:6334"
-    volumes:
-      - ./data/qdrant:/qdrant/storage
-    networks:
-      - knowrag-net
+  # ── Optional: Open WebUI for chat over the local Ollama ────────────────
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:v0.4.8
     container_name: knowrag-webui
+    profiles:
+      - webui
     ports:
       - "${WEBUI_PORT:-3000}:8080"
     environment:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-    depends_on:
-      - ollama
     volumes:
       - ./data/open-webui:/app/backend/data
-    networks:
-      - knowrag-net
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: knowrag-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./data/ollama:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - knowrag-net
 
