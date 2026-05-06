@@ -22,13 +22,23 @@ data/
 # Agent artifacts & Testing outputs
 .agents/
 .claude/
+.codex
+.handoffs/
+.kB/
 .memo/
 .planning/
 .w7-meta
 dogfood-output/
+HANDOFF.md
 PRPs/
 **/node_modules/
 **/.omg/
+
+# Nested separate-repo projects (do not absorb)
+@dev/skill-generator/
+
+# Empty / WIP placeholders
+@lab/Mannos-sos/
 
 # Integration & Development scripts
 *.sh
