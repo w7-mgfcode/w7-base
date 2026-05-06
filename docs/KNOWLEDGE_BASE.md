@@ -32,6 +32,7 @@ W7-Base is a local-first orchestration framework that provides PaaS-like ergonom
 - **New Stack:** `w7 init @dev/myapp` -> Define `compose.yml` -> `w7 up myapp`.
 - **Secret Setup:** `w7 secret init <stack>` -> Edit `.env` -> Commit `.env.sops`.
 - **Compliance Audit:** Run `w7 doctor` regularly to check for policy violations.
+- **Capability Smoke:** `w7 verify <stack>` runs the stack-local end-to-end smoke (e.g. KNOWRAG: ingestion → search → `/related` → MCP). Stacks opt in by providing `scripts/verify.sh`.
 - **Maintenance:** Use `w7 backup <stack>` before major config changes.
 
 ### Troubleshooting (Checklist)

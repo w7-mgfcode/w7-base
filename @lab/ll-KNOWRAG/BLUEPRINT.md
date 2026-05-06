@@ -246,6 +246,25 @@ return { hits: [...], pages: [...], query_time_ms }
 - `GET  /health`
 - `GET  /api/health` (detailed: gitea, qdrant, ollama reachability)
 
+> Note: Phase 8 also exposes `/api/artifacts/*` (list, get, related, search) — the canonical contract that the catalog UI and the verify harness assert against. The `/api/knowledge-items/*` and `/api/rag/query` routes above are kept for backward compatibility with Phase-7 callers; new clients should target `/api/artifacts`.
+
+## 9.5 Operational Verification
+
+The Phase 8 contract is **"git push → searchable in 30 seconds, end-to-end, on real running infrastructure"**. `w7 verify @lab/ll-KNOWRAG` proves the contract on a live stack via six in-order checks:
+
+1. `api.health` — API responds healthy
+2. `gitea.kb_repo_exists` — KB repo reachable via Gitea API
+3. `ingestion.seed_and_grow` — fixtures committed to a temp branch grow Qdrant `points_count` within 60s
+4. `search.api_returns_hits` — `POST /api/artifacts/search` returns ≥1 hit
+5. `related.api_returns_3_plus` — `GET /api/artifacts/.../related?k=5` returns ≥3 sibling artifacts
+6. `mcp.search_returns_hits` — MCP `rag_search_knowledge_base` returns content over the FastMCP HTTP transport
+
+The harness is non-destructive by default: a temp branch (`verify-<utc-ts>-<pid>`) is created, fixtures are committed, the Qdrant collection grows, all assertions run, and the EXIT trap deletes the temp branch and Qdrant points. The KB's `main` branch is never touched.
+
+Each run writes `dogfood-output/<utc-timestamp>/{result.json,report.md,curl-trace.log}`. The JSON envelope is suitable for CI gating (`exit_code == 0` ∧ `summary.{critical,high}` both 0).
+
+Operator guide: [`docs/runbook.md`](docs/runbook.md#end-to-end-verification-w7-verify-lablknowrag) and [`scripts/README.md`](scripts/README.md).
+
 ## 10. Security Model
 
 | Surface | Threat | Mitigation |

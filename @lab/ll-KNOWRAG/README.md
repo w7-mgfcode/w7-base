@@ -22,6 +22,11 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
    docker exec -it knowrag-ollama ollama pull llama3
    ```
 4. **Access Console**: Open `http://localhost:3737` in your browser.
+5. **Verify End-to-End**: Once the stack is up, prove the Phase 8 contract works:
+   ```bash
+   w7 verify @lab/ll-KNOWRAG
+   ```
+   Six checks (api.health → gitea → ingestion → search → /related → MCP) run in ~60 seconds against a live stack. Results land in `dogfood-output/<utc-timestamp>/`. See [`docs/runbook.md`](docs/runbook.md#end-to-end-verification-w7-verify-lablknowrag) for run modes and troubleshooting.
 
 ## Current Status
 - **Core Pipeline**: Implemented and Verified.
@@ -40,6 +45,7 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
   - HMAC-verified Gitea webhook ingestion + reconcile job
   - Frontmatter Pydantic schema (tags/status/version/owner/visibility)
   - Tailwind v4 design system + Stitch primitives + card-grid catalog UI
+  - **End-to-end verify harness** (`w7 verify @lab/ll-KNOWRAG`) — closes the deferred-items gap from the T10 dogfood
 - **Ready for**: Local dev execution, testing, and agent integration.
 
 ## License
