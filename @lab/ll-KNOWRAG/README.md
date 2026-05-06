@@ -42,10 +42,10 @@ This project is an extraction and adaptation of the Archon KB/RAG core, optimize
   - Feature flags wired into config (`USE_HYBRID_SEARCH`, `USE_RERANKING`, etc.)
 - **Phase 8 — Re-architecture**: Shipped (T1–T10 verified).
   - Storage backend pivoted from Supabase/PostgREST/pgvector to **Gitea + Qdrant + Ollama**
-  - HMAC-verified Gitea webhook ingestion + reconcile job
+  - HMAC-verified Gitea webhook ingestion modules (chunker, HMAC, indexer, orchestrator) — **route binding pending: see [#19](https://github.com/w7-mgfcode/w7-base/issues/19)**
   - Frontmatter Pydantic schema (tags/status/version/owner/visibility)
   - Tailwind v4 design system + Stitch primitives + card-grid catalog UI
-  - **End-to-end verify harness** (`w7 verify @lab/ll-KNOWRAG`) — closes the deferred-items gap from the T10 dogfood
+  - **End-to-end verify harness** (`w7 verify @lab/ll-KNOWRAG`) — first live-stack baseline: **3/6 pass** (`dogfood-output/20260506T213008Z/`). API, Gitea, and MCP layers healthy; the 3 failures all stem from #19.
 - **Ready for**: Local dev execution, testing, and agent integration.
 
 ## License
