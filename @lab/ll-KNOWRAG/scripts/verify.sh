@@ -28,7 +28,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STACK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-STACK_NAME="@lab/$(basename "${STACK_DIR}")"
+ZONE_DIR="$(cd "${STACK_DIR}/.." && pwd)"
+STACK_NAME="$(basename "${ZONE_DIR}")/$(basename "${STACK_DIR}")"
 
 # shellcheck source=lib/verify-helpers.sh
 source "${SCRIPT_DIR}/lib/verify-helpers.sh"
