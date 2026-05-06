@@ -49,7 +49,7 @@ _curl_json() {
   if [[ $# -gt 0 && "$1" != "-H"* ]]; then
     body="$1"; shift
   fi
-  local args=(-sS --max-time 15 -X "$method" -o /tmp/.verify-resp.$$ -w '%{http_code}')
+  local args=(-sSL --max-time 15 -X "$method" -o /tmp/.verify-resp.$$ -w '%{http_code}')
   while [[ $# -gt 0 ]]; do
     args+=(-H "$1"); shift
   done
@@ -71,15 +71,46 @@ api_post() {
 }
 
 mcp_call() {
-  # Call a FastMCP tool via HTTP. FastMCP-HTTP exposes JSON-RPC at the mount
-  # point (default `/mcp/`). Tool invocation = POST {jsonrpc:"2.0", method:"tools/call",
-  # params:{name,arguments}, id:1}.
+  # Call a FastMCP tool via HTTP. FastMCP-HTTP requires a session: POST
+  # `initialize` first, capture the `Mcp-Session-Id` response header, then
+  # POST `tools/call` with that header. Returns the tool-call response body
+  # on stdout; non-zero on any step failure.
   local tool_name="$1"; local args_json="$2"
+  local hdr_file="/tmp/.mcp-hdr.$$"
+  local body_file="/tmp/.mcp-body.$$"
+  local init_rpc
+  init_rpc='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"w7-verify","version":"1.0.0"}}}'
+  curl -sSL --max-time 15 -X POST "${MCP_URL}/mcp/" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json, text/event-stream" \
+    -D "$hdr_file" -o "$body_file" \
+    --data-binary "$init_rpc" >/dev/null 2>&1 || { rm -f "$hdr_file" "$body_file"; return 2; }
+  local session_id
+  session_id=$(awk -F': ' 'tolower($1)=="mcp-session-id"{print $2}' "$hdr_file" | tr -d '\r\n')
+  rm -f "$hdr_file"
+  if [[ -z "$session_id" ]]; then
+    cat "$body_file"; rm -f "$body_file"
+    return 1
+  fi
+  # Notify initialized (best-effort; FastMCP requires this before tool calls)
+  curl -sSL --max-time 5 -X POST "${MCP_URL}/mcp/" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json, text/event-stream" \
+    -H "Mcp-Session-Id: ${session_id}" \
+    --data-binary '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}' \
+    >/dev/null 2>&1 || true
+  # Tool call
   local rpc
   rpc=$(jq -nc --arg name "$tool_name" --argjson args "$args_json" \
-    '{jsonrpc:"2.0", id:1, method:"tools/call", params:{name:$name, arguments:$args}}')
-  _curl_json POST "${MCP_URL}/mcp/" "$rpc" \
-    "Accept: application/json, text/event-stream"
+    '{jsonrpc:"2.0", id:2, method:"tools/call", params:{name:$name, arguments:$args}}')
+  curl -sSL --max-time 15 -X POST "${MCP_URL}/mcp/" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json, text/event-stream" \
+    -H "Mcp-Session-Id: ${session_id}" \
+    -o "$body_file" \
+    --data-binary "$rpc" >/dev/null 2>&1 || { rm -f "$body_file"; return 2; }
+  cat "$body_file"
+  rm -f "$body_file"
 }
 
 gitea_api() {
