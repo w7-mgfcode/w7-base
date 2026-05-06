@@ -34,7 +34,7 @@ Phase 7 took the system to UI/Backend parity on a Supabase + PostgREST + pgvecto
 
 - Multi-tenant SaaS architecture (single-user / small-team only).
 - Advanced RBAC beyond Gitea visibility rules (`public` / `private` per repo).
-- Legacy Supabase/PostgREST/pgvector — **fully deprecated**. Old SQL migrations under `db/migrations/` are kept for git-history reference and will be removed in a follow-up cleanup slice.
+- Legacy Supabase/PostgREST/pgvector — **fully deprecated**. Old SQL migrations under `db/migrations/` were removed in #12 (recoverable via tag `pre-knowrag-cleanup`).
 - Real-time collaborative editing — **Git is the SSoT**. Mutations are commits; conflicts surface as merge conflicts, not last-write-wins.
 
 ## 4. Target Topology
@@ -316,7 +316,7 @@ These are the 10 subtasks tracked in `.omg/state/taskboard.md`:
 
 These components were canonical in Phase 7 and are **deprecated** in Phase 8. Code remains in git history; references in active docs are removed.
 
-- `db/migrations/00{1..8}_*.sql` — Postgres extensions, settings, sources, pages, chunks, search functions, contextual schema, source counts RPC. **Replaced by:** Gitea directory shape + Qdrant collections + frontmatter Pydantic schema.
+- `db/migrations/00{1..8}_*.sql` — Postgres extensions, settings, sources, pages, chunks, search functions, contextual schema, source counts RPC. **Removed in #12** (recoverable via tag `pre-knowrag-cleanup`). **Replaced by:** Gitea directory shape + Qdrant collections + frontmatter Pydantic schema.
 - `apps/api/src/server/services/storage/storage_operations.py` (PostgREST client) — **Replaced by:** Gitea API client (T5).
 - `apps/api/src/server/services/search/{vector,hybrid}_search_strategy.py` (pgvector + tsvector queries) — **Replaced by:** Qdrant client (T8).
 - The `kb_sources / kb_pages / kb_chunks` table model — **Replaced by:** Markdown files in Gitea + frontmatter metadata.
