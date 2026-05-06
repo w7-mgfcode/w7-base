@@ -6,41 +6,40 @@ W7-aligned local-first Knowledge Base and RAG system.
 This project is an extraction and adaptation of the Archon KB/RAG core, optimized for local operation within the W7 platform. It provides a full ingestion, embedding, and retrieval pipeline tailored for autonomous agents and local operators.
 
 ## Architecture
-- **API**: FastAPI backend orchestrating crawling, ingestion, chunking, embeddings, and RAG retrieval.
-- **MCP**: FastMCP service providing standard agentic tools, serving as a thin wrapper around the API.
-- **UI**: React frontend operator console for managing sources, adding knowledge via crawl, and querying the KB.
-- **Store**: Local Supabase (PostgreSQL + pgvector).
+- **API**: FastAPI backend orchestrating Gitea CRUD, frontmatter parsing, chunking, embeddings, Qdrant upsert + query, and RAG retrieval.
+- **MCP**: FastMCP service providing standard agentic tools, serving as a thin HTTP proxy to the API.
+- **UI**: React + Vite + Tailwind frontend operator console for browsing the catalog, adding knowledge, and querying the KB.
+- **Store**: Gitea (artifact source-of-truth — Markdown + YAML frontmatter; Git history = audit log) + Qdrant (vector index).
 - **Embeddings/LLM**: Ollama (local) or OpenAI-compatible cloud (defaults to Ollama).
 
 ## Getting Started
-1. **Configure Env**: Copy `.env.example` to `.env` and set `JWT_SECRET` and `SUPABASE_SERVICE_KEY`.
+1. **Configure Env**: Copy `.env.example` to `.env` and set `GITEA_TOKEN` (SOPS-encrypt this) and `GITEA_WEBHOOK_SECRET`.
 2. **Boot Services**: `docker compose up -d`
 3. **Initialize Models**:
    ```bash
    docker exec -it knowrag-ollama ollama pull nomic-embed-text
+   # Optional: only needed if USE_CONTEXTUAL_EMBEDDINGS=true
    docker exec -it knowrag-ollama ollama pull llama3
    ```
 4. **Access Console**: Open `http://localhost:3737` in your browser.
 
 ## Current Status
 - **Core Pipeline**: Implemented and Verified.
-  - Repo foundation, DB migrations (001-007)
   - Crawl discovery (`llms.txt`, `sitemap.xml`)
   - **Recursive Crawling** with depth and page limits (Slice 7.6)
   - **LLMS.txt Task Expansion** for multi-page discovery (Slice 7.7)
   - Ingestion and chunking (Blueprint Section 10)
   - Embedding pipeline (Ollama / OpenAI-compatible)
   - Retrieval engine (Vector + Hybrid + Page grouping)
-  - Advanced Retrieval (**Provider-ready Reranking** & Contextual Embeddings - gated)
+  - Advanced Retrieval (**Provider-ready Reranking** & Contextual Embeddings — gated)
   - MCP Tool Server (KB-focused tools)
-  - React UI Operator Console (source management, search, add knowledge)
+  - React UI Operator Console (catalog, search, add knowledge)
   - Feature flags wired into config (`USE_HYBRID_SEARCH`, `USE_RERANKING`, etc.)
-- **Maintenance & Security (Phase 7)**: Implemented.
-  - Environment variable interpolation in Compose
-  - Hardened secret management (no hardcoded keys in Compose)
-  - Startup model validation and improved logging
-  - Log level configuration
-  - Operator docs and Runbook updated
+- **Phase 8 — Re-architecture**: Shipped (T1–T10 verified).
+  - Storage backend pivoted from Supabase/PostgREST/pgvector to **Gitea + Qdrant + Ollama**
+  - HMAC-verified Gitea webhook ingestion + reconcile job
+  - Frontmatter Pydantic schema (tags/status/version/owner/visibility)
+  - Tailwind v4 design system + Stitch primitives + card-grid catalog UI
 - **Ready for**: Local dev execution, testing, and agent integration.
 
 ## License
