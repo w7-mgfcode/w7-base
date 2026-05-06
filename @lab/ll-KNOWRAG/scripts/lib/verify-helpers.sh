@@ -259,9 +259,12 @@ seed_from_memory_dir() {
     fi
     echo "$target"
     count=$((count + 1))
-    [[ $count -ge 5 ]] && break
+    [[ $count -ge 10 ]] && break
   done < <(find "$mem_dir" -maxdepth 1 -name '*.md' -type f | sort)
-  if (( count == 0 )); then
+  # Memory mode requires >=4 markdown files to satisfy the harness floor
+  # (1 baseline + 3 related). Caller falls back to built-in fixtures when
+  # this returns non-zero.
+  if (( count < 4 )); then
     return 1
   fi
 }
