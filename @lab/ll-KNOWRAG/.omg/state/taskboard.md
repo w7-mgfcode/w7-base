@@ -28,7 +28,7 @@ T1 ──┬─► T2 ──► T4 ──► T5 ──┬─► T7 ──► T8 
 
 | ID | Task | Owner | Depends | Parallel | Validation | Status |
 |----|------|-------|---------|----------|------------|--------|
-| **T1** | Working-tree triage & atomic baseline | omg-executor | — | ❌ | `git status` clean OR ≤ 1 deliberate WIP file; CI green | todo |
+| **T1** | Working-tree triage & atomic baseline | omg-executor | — | ❌ | `git status` clean OR ≤ 1 deliberate WIP file; CI green | ✅ verified |
 | **T2** | BLUEPRINT.md + architecture docs rewrite | omg-architect | T1 | ✅ w/ T3 | No Supabase/PostgREST refs except deprecation notes; new diagrams | todo |
 | **T3** | `compose.yml` finalization | omg-executor | T1 | ✅ w/ T2 | `docker compose config -q` passes; `w7 doctor` clean; pinned image tags | todo |
 | **T4** | Gitea bootstrap & KB repo seed | omg-executor | T3 | ❌ | Fresh `up` produces populated `kb-default` repo with 6-dir shape; idempotent | todo |
