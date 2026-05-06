@@ -120,6 +120,7 @@ The CLI auto-injects `COMPOSE_PROJECT_NAME="<zone>-<stack>"` (e.g., `dev-my-app`
 | `w7 net` | Port-mapping visibility |
 | `w7 backup <stack>` | Tar.gz of `data/` (excludes `.env` to prevent secret leakage) |
 | `w7 prune <stack>` | Destroy containers + networks + volumes — **`@lab` only** |
+| `w7 verify <stack>` | Run stack-local end-to-end smoke (e.g. KNOWRAG: ingestion + search + `/related` + MCP) |
 | `w7 secret <init\|edit\|decrypt> <stack>` | SOPS+AGE secret management |
 
 ---

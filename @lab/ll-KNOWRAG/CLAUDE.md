@@ -69,6 +69,20 @@ cd apps/api && pip install -r requirements.txt
 PYTHONPATH=src uvicorn server.main:app --host 0.0.0.0 --port 8181 --reload
 ```
 
+### Verify the stack end-to-end
+```bash
+# Standalone (assumes the stack is already up)
+bash scripts/verify.sh
+
+# Via the W7 CLI (decrypts .env.sops, exports envvars, writes result.json + report.md)
+w7 verify @lab/ll-KNOWRAG
+
+# Seed fixtures from your Claude Code memory dir instead of built-ins
+w7 verify @lab/ll-KNOWRAG --seed-from-memory
+```
+
+The harness asserts the Phase 8 contract: `api.health` → `gitea.kb_repo_exists` → `ingestion.seed_and_grow` → `search.api_returns_hits` → `related.api_returns_3_plus` → `mcp.search_returns_hits`. Results land in `dogfood-output/<utc-timestamp>/`. See `scripts/README.md`.
+
 ## KB Repo Layout
 
 The Gitea repo (`${GITEA_KB_REPO}`, default `kb-default`) follows this directory shape:

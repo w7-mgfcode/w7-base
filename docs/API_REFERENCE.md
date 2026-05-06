@@ -16,6 +16,7 @@ Detailed reference for the `w7` CLI and the `.w7-meta` stack configuration schem
 | `w7 secret [init\|edit\|rotate] [stack]` | | Manages SOPS-encrypted secrets. |
 | `w7 backup [stack]` | | Creates a tarball of the stack's `data/` folder. |
 | `w7 prune [stack]` | | Destroys stack resources (restricted to `@lab`). |
+| `w7 verify [stack]` | `--cold`, `--running`, `--seed-from-memory`, `--keep`, `--json` | Runs stack-local end-to-end smoke. Dispatches to `<stack>/scripts/verify.sh`. Exit codes: `0` pass, `1` check failed, `2` setup error / no `verify.sh`, `127` missing dep. |
 
 ## 2. The `.w7-meta` Schema
 Every stack directory MUST contain a `.w7-meta` file for the CLI and GitOps engine to function.
