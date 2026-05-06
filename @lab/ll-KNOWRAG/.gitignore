@@ -9,3 +9,11 @@ data/*
 !data/.gitkeep
 !data/ollama/
 !data/ollama/.gitkeep
+
+# dogfood-output: keep verify-run timestamped subdirs committed; ignore legacy
+# node-explorer junk that previously lived under dogfood-output/
+dogfood-output/test-results/
+dogfood-output/videos/
+dogfood-output/screenshots/
+dogfood-output/node_modules/
+dogfood-output/seed-from-memory/
