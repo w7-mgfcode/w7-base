@@ -167,12 +167,11 @@ run_check() {
 # ── Output emitters ────────────────────────────────────────────────────────
 
 emit_result_json() {
-  # emit_result_json STACK STARTED_AT FINISHED_AT EXIT_CODE OUTPUT_DIR
-  local stack="$1"; local started="$2"; local finished="$3"; local exit_code="$4"; local out_dir="$5"
-  local started_ms finished_ms
-  started_ms=$(date -u -d "$started" +%s%3N 2>/dev/null || echo 0)
-  finished_ms=$(date -u -d "$finished" +%s%3N 2>/dev/null || echo 0)
-  local duration_ms=$((finished_ms - started_ms))
+  # emit_result_json STACK STARTED_AT FINISHED_AT DURATION_MS EXIT_CODE OUTPUT_DIR
+  # DURATION_MS is precomputed by the caller using the portable now_ms() helper —
+  # avoids GNU-only `date -u -d` which silently degrades to 0 on macOS/BSD.
+  local stack="$1"; local started="$2"; local finished="$3"
+  local duration_ms="$4"; local exit_code="$5"; local out_dir="$6"
 
   local critical high medium low
   critical=$(jq -r '[.[] | select(.severity=="critical" and .status=="fail")] | length' <<<"$VERIFY_CHECKS_JSON")

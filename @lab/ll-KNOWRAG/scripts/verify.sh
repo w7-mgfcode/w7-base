@@ -300,6 +300,7 @@ check_mcp_search() {
 # ── Run sequence ───────────────────────────────────────────────────────────
 
 STARTED_AT=$(now_iso)
+STARTED_MS=$(now_ms)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "  🔍 w7 verify ${STACK_NAME}" >&2
 echo "  ${STARTED_AT}" >&2
@@ -313,6 +314,8 @@ run_check "related.api_returns_3_plus" check_related      high     || true
 run_check "mcp.search_returns_hits"  check_mcp_search     medium   || true
 
 FINISHED_AT=$(now_iso)
+FINISHED_MS=$(now_ms)
+DURATION_MS=$((FINISHED_MS - STARTED_MS))
 
 if [[ "${VERIFY_FAILED}" -eq 0 ]]; then
   EXIT_CODE=0
@@ -320,7 +323,7 @@ else
   EXIT_CODE=1
 fi
 
-emit_result_json "${STACK_NAME}" "${STARTED_AT}" "${FINISHED_AT}" "${EXIT_CODE}" "${OUTPUT_DIR}"
+emit_result_json "${STACK_NAME}" "${STARTED_AT}" "${FINISHED_AT}" "${DURATION_MS}" "${EXIT_CODE}" "${OUTPUT_DIR}"
 emit_report_md   "${STACK_NAME}" "${STARTED_AT}" "${FINISHED_AT}" "${EXIT_CODE}" "${OUTPUT_DIR}"
 
 echo "────────────────────────────────────────────" >&2
