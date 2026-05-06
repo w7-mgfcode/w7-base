@@ -1,291 +1,370 @@
 # W7-Base
 
-W7-Base is a local orchestration framework designed for developers and homelab operators who want the ergonomics of a PaaS without leaving the terminal. It standardizes Docker Compose deployments across isolated zones, provides a unified `w7` CLI, and integrates a secure, local-first GitOps deployment engine.
+> **Local-first orchestration & GitOps platform** built on Docker Compose and a unified `w7` CLI. PaaS-grade ergonomics without leaving the terminal — designed for developers and homelab operators.
+
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey)]()
+[![Stack](https://img.shields.io/badge/stack-Docker%20Compose-2496ED?logo=docker)]()
+[![CLI](https://img.shields.io/badge/CLI-bash-4EAA25?logo=gnubash)]()
+[![GitOps](https://img.shields.io/badge/gitops-Gitea%20%2B%20Webhook-609926?logo=gitea)]()
+[![Secrets](https://img.shields.io/badge/secrets-SOPS%20%2B%20AGE-blue)]()
+[![Status](https://img.shields.io/badge/baseline-Phase%207%20sealed-success)]()
 
 ---
 
-## 🚀 Quick Start & Installation
+## What is W7-Base?
 
-**Prerequisites:** `bash` or `zsh`, `docker`, `docker-compose-plugin`, and `tar`.
+W7-Base is a **directory-driven monorepo** that standardizes Docker Compose deployments across four isolated zones (`@ops`, `@dev`, `@prod`, `@lab`) and exposes them through a single ergonomic CLI: `w7`. It bundles GitOps automation, SOPS-encrypted secrets, Traefik ingress, observability, and policy enforcement — all running entirely on your local machine or a small VPS.
 
-1. **Clone the Framework**
-   ```bash
-   git clone https://github.com/your-org/w7-localbase.git ~/w7-localbase
-   cd ~/w7-localbase
-   ```
+**Built for:**
+- Developers running multiple compose stacks who are tired of typing `docker compose -f ... --env-file ...`.
+- Homelab operators who want PaaS-style discoverability without Kubernetes.
+- Teams that want GitOps discipline (push → deploy) on a single host, with no cloud dependency.
 
-2. **Shell Integration**
-   Add the following line to your `~/.bashrc` or `~/.zshrc` to unlock the `w7` CLI wrapper, `w7 go` path jumping, and zone aliases:
-   ```bash
-   source ~/w7-localbase/.shared/w7.sh
-   ```
-   *Reload your shell (`source ~/.bashrc`).*
-
-3. **Verify Installation**
-   ```bash
-   w7 stat
-   ```
-   You should see the (currently empty) W7-Base Health Matrix.
+**Not built for:**
+- Multi-host orchestration (use Kubernetes/Swarm).
+- Production cloud deployments.
+- Stateless ephemeral workloads (it's local-first, persistent-volume oriented).
 
 ---
 
-## 🏗️ Architecture & Directory Contract
+## 🚦 Current Development State
 
-The framework is divided into isolated deployment zones. A "stack" is any directory inside a zone that contains a `.w7-meta` file.
+| Area | Status | Notes |
+|------|--------|-------|
+| **Platform baseline** (zones, CLI, GitOps, secrets, observability) | ✅ **Sealed at Slice 21** | All 23 documentation slices verified |
+| **`@ops` services** (9 stacks) | ✅ Operational | Gitea, Traefik, Webhook, Prometheus, Grafana, Node Exporter, W7 Exporter, Dozzle, Act-Runner |
+| **`@dev/anythingllm`** (LLM workspace) | ✅ Deployed | Postgres + Qdrant + Gemini, SOPS-encrypted secrets |
+| **`@lab/ll-KNOWRAG`** (KB/RAG sub-project) | 🔄 Phase 7 sealed → Phase 8 pivot in-flight | See [§ KNOWRAG](#-knowrag--knowledge-base--rag-sub-project) |
+| **`@prod/whoami`** | ✅ Validation workload | Pre-prod gate verified |
 
-```text
-~/w7-localbase/
-├── @ops/           # Core framework services (Gitea, Webhook, Dozzle)
-├── @dev/           # Active local development stacks
-├── @prod/          # Local production-grade stacks (Protected)
-├── @lab/           # Sandboxes & experiments (Disposable)
-├── .shared/        # Global configuration bridge and shell scripts
-└── .bin/           # The compiled w7 CLI executable
+> 📍 **Active focus:** `@lab/ll-KNOWRAG` is mid-pivot from Supabase/PostgREST to **Gitea + Qdrant** as the storage backend. Phase 7 (UI/Backend parity, recursive crawling, reranking) is sealed; Phase 8 (re-architecture) is the next planned slice.
+
+---
+
+## 🚀 Quick Start
+
+**Prerequisites:** `bash` (or `zsh`), `docker`, `docker-compose-plugin`, `tar`. Optional: `age` and `sops` for encrypted secrets.
+
+```bash
+# 1. Clone
+git clone https://github.com/w7-mgfcode/w7-base.git ~/w7-base
+cd ~/w7-base
+
+# 2. Activate shell integration (adds `w7` CLI, zone aliases, `w7 go` cwd-jump)
+echo 'source ~/w7-base/.shared/w7.sh' >> ~/.bashrc
+source ~/.bashrc
+
+# 3. Verify
+w7 stat        # Cross-zone health matrix
+w7 doctor      # Validate host dependencies, DNS, contracts
+```
+
+You'll see the W7-Base health matrix showing all stacks across all zones.
+
+---
+
+## 🏗️ Architecture
+
+```
+~/w7-base/
+├── @ops/             Core platform (Gitea, Traefik, Prometheus, Grafana, ...)
+├── @dev/             Active development stacks
+├── @prod/            Production-grade local stacks (gated)
+├── @lab/             Sandboxes & experiments (only zone where `prune` is allowed)
+├── .shared/          Global env bridge, policies, deploy templates
+├── .bin/             Vendored CLI: w7, sops, age
+└── docs/             Platform documentation
 ```
 
 ### The Strict Stack Contract
-Every stack inside a zone **must** follow this exact layout to be discovered by the CLI:
 
-```text
-@dev/my-database/
-├── .w7-meta        # YAML: Defines GitOps routing and metadata
-├── compose.yml     # The standard Docker Compose definition
-├── data/           # Directory for local persistent volumes (Targeted by w7 backup)
-├── .env.example    # Required secrets schema (committed to git)
-└── .env            # Actual secrets (NEVER committed)
+A **stack** is any directory exactly one level deep inside a zone that contains a `.w7-meta` file:
+
+```
+@dev/my-app/
+├── .w7-meta          YAML — GitOps routing, dependencies, health checks
+├── compose.yml       Standard Docker Compose definition
+├── data/             Persistent volumes (target of `w7 backup`)
+├── .env.example      Required-secret schema (committed)
+├── .env              Real secrets (NEVER committed)
+└── .env.sops         SOPS+AGE encrypted secrets (safe to commit)
 ```
 
-> **Note:** To prevent daemon-level collisions when running identical stacks in different zones (e.g., `@dev/db` vs `@prod/db`), the CLI automatically isolates networks by prefixing `COMPOSE_PROJECT_NAME="<zone>-<stack>"`.
+The CLI auto-injects `COMPOSE_PROJECT_NAME="<zone>-<stack>"` (e.g., `dev-my-app`) before invoking Docker so identical stacks across zones don't collide.
+
+### Zone Lifecycle Policy
+
+| Zone | Trust | GitOps | `prune` allowed | `up` requires `--yes` |
+|------|-------|--------|-----------------|----------------------|
+| `@ops` | High | Webhook + Actions | ❌ | ❌ |
+| `@dev` | Med  | Webhook (instant) | ❌ | ❌ |
+| `@prod` | Highest | Actions only (approval-gated) | ❌ | ✅ |
+| `@lab` | Low  | Webhook (instant) | ✅ | ❌ |
 
 ---
 
-## 🛠️ The `w7` CLI Reference
-
-The CLI is a thin, ergonomic wrapper around `docker compose`.
+## 🛠️ The `w7` CLI
 
 | Command | Description |
-|---|---|
-| `w7 up <stack>` | Starts the stack. Safely merges `.shared/global.env` and the stack's `.env`. Automatically blocks unforced executions in the `@prod` zone. |
-| `w7 go <stack>` | Changes your shell's current working directory to the targeted stack. Understands ambiguity and suggests paths if multiple exist. |
-| `w7 stat` | Prints a fast, O(1) cross-zone matrix showing the up/down status of all discovered stacks. |
-| `w7 logs <stack>` | Tails the logs for the stack, preserving native Docker ANSI colors. |
-| `w7 backup <stack>` | Creates a timestamped `.tar.gz` archive of the stack's `data/` directory. Explicitly ignores `.env` files to prevent secret leakage. |
-| `w7 prune` | Destroys containers, networks, and volumes for a stack. **Hard-limited to the `@lab` zone only** to prevent accidental data loss. |
-
-**Usage Example:**
-```bash
-w7 up @dev/postgres
-w7 logs @dev/postgres
-w7 backup @dev/postgres
-```
+|---------|-------------|
+| `w7 up <stack\|all>` | Start stack(s) — merges `.shared/global.env` and stack `.env`; `all` boots `@ops` first |
+| `w7 down <stack\|all>` | Stop stack(s) — `all` stops application zones first, `@ops` last |
+| `w7 init <@zone/stack>` | Scaffold a new stack with the standard contract |
+| `w7 doctor [--json]` | Validate dependencies, DNS, secret coverage, policy compliance |
+| `w7 stat` | O(1) cross-zone status matrix |
+| `w7 top` / `stats` | Live per-zone resource visibility |
+| `w7 logs <stack>` | Tail logs (preserves Docker ANSI colors) |
+| `w7 go <stack>` | `cd` shell to stack path (requires `.shared/w7.sh` sourced) |
+| `w7 net` | Port-mapping visibility |
+| `w7 backup <stack>` | Tar.gz of `data/` (excludes `.env` to prevent secret leakage) |
+| `w7 prune <stack>` | Destroy containers + networks + volumes — **`@lab` only** |
+| `w7 secret <init\|edit\|decrypt> <stack>` | SOPS+AGE secret management |
 
 ---
 
-## 🌍 The Global Environment Bridge
+## 🌍 Environment Bridge
 
-Instead of repeating variables (like domain names or timezones) in every stack, W7-Base uses an overriding bridge. 
+W7-Base layers env files instead of duplicating them. CLI runs:
 
-When you run `w7 up`, the CLI executes:
 ```bash
 docker compose --env-file .shared/global.env --env-file .env up -d
 ```
 
-**Precedence Hierarchy:**
-1. Host OS exported variables (Highest)
-2. Stack Local (`<zone>/<stack>/.env`)
-3. Global Bridge (`.shared/global.env`) (Lowest)
+**Precedence (highest wins):**
+1. Host OS exported variables
+2. Stack-local `.env`
+3. Global bridge `.shared/global.env` (no secrets here — committed)
 
-**Security Rule:** Never place secrets in `.shared/global.env`. Use it strictly for shared ergonomics.
-
----
-
-## 🔄 GitOps & Webhook Safety
-
-W7-Base includes an automated deployment engine (`@ops/webhook`) designed to listen to a local Gitea instance (`@ops/gitea`).
-
-### How It Works
-1. You push a commit to your local Gitea repository.
-2. Gitea fires a webhook. The listener authenticates it using an HMAC-SHA256 signature (`X-Gitea-Signature`).
-3. The deployment script (`deploy.sh`) maps the Git repository and branch to a local stack via the stack's `.w7-meta` file.
-4. It performs a safe `git pull`.
-5. **Pre-Deploy Gate:** It runs `docker compose config`. If the new configuration is invalid, it rolls back the `git` commit and aborts before taking the containers down.
-6. It executes `w7 up` to redeploy.
-
-### ⚠️ Security Attack Surface
-The `@ops/webhook` container requires access to `/var/run/docker.sock` to execute deployments. While restricted to your local network, if this container is compromised, the attacker gains root-level access to the host machine. Ensure the webhook port (9000) is never exposed to the public internet.
+Use `${REQUIRED_KEY:?error msg}` in `compose.yml` for fail-fast on missing vars.
 
 ---
 
-## 🚑 Troubleshooting & Recovery
-
-**"Command 'go' is not working or says 'directory not found'"**
-You are executing the `.bin/w7` binary directly instead of the shell wrapper. Ensure `source ~/w7-localbase/.shared/w7.sh` is active in your current terminal session.
-
-**"My GitOps deployment failed silently"**
-Check the webhook listener logs:
-```bash
-w7 logs @ops/webhook
-```
-If a deployment fails the `docker compose config` validation step (e.g., missing a mandatory variable in `.env`), the system will safely abort and roll back the repository state to the previous commit.
-
-**"w7 up in @prod is failing"**
-By design, the MVP blocks automated or accidental `w7 up` commands inside the `@prod` zone. You must explicitly bypass this using manual docker compose commands or await the Phase 2 `--force` flag.
-
----
-
-## 🔐 Secret Management
-
-W7-Base uses a three-file model for secrets:
+## 🔐 Secret Management — Three-File Model
 
 | File | Committed? | Purpose |
 |------|-----------|---------|
-| `.env.example` | Yes | Documents required keys (shape only) |
-| `.env` | **Never** | Real secrets, used at runtime |
-| `.env.sops` | Yes (encrypted) | AGE-encrypted secrets for safe Git storage |
+| `.env.example` | ✅ Yes | Schema (key names + placeholders) |
+| `.env` | ❌ **Never** | Real values, runtime only |
+| `.env.sops` | ✅ Yes (encrypted) | AGE-encrypted `.env`, GitOps-safe |
 
-**Auto-decryption:** When `w7 up` finds a `.env.sops` newer than `.env`, it automatically decrypts using SOPS + AGE — enabling true GitOps without exposing secrets.
-
-**Validation:** `w7 doctor` checks that `.env` keys match `.env.example` and that SOPS configuration is present.
+**Auto-decrypt:** `w7 up` decrypts `.env.sops` → `.env` automatically when the encrypted file is newer and `sops` is installed.
 
 ```bash
-# Setup SOPS encryption
-age-keygen -o ~/.config/sops/age/keys.txt   # Generate key
-# Edit .sops.yaml with your public key
-w7 secret init @ops/gitea                    # Encrypt existing .env
-w7 secret edit @ops/gitea                    # Edit encrypted secrets
+age-keygen -o ~/.config/sops/age/keys.txt    # Generate key
+# Paste public key into root .sops.yaml
+w7 secret init @ops/gitea                     # Encrypt existing .env
+w7 secret edit @ops/gitea                     # Edit encrypted secrets
 ```
 
-See `.shared/SECRETS.md` for full operator guide.
+Full guide: [.shared/SECRETS.md](.shared/SECRETS.md)
 
 ---
 
-## 🗺️ Phase 2 Roadmap
+## 🔄 GitOps — Hybrid Model
+
+| Path | Trigger | Use For | Approvals |
+|------|---------|---------|-----------|
+| **Webhook** (`@ops/webhook`) | Instant push (HMAC-signed) | `@dev`, `@lab` | None — speed over ceremony |
+| **Runner** (`@ops/act-runner`) | Gitea Actions (push, PR, schedule, manual) | `@ops`, `@prod` | Branch protection + required reviews |
+
+The webhook flow: push → HMAC verify → `git pull` → `docker compose config` validation → `w7 up`. Failed validation rolls back the commit; the running stack stays untouched.
+
+Full design: [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md)
+
+---
+
+## 🌐 Ingress — Traefik
+
+All HTTP services route through Traefik on the `w7-ingress` external Docker network. Default hostnames (add to `/etc/hosts`):
+
+| Service | URL |
+|---------|-----|
+| Traefik dashboard | `http://localhost:8080` |
+| Gitea | `http://git.w7.local` |
+| Webhook listener | `http://webhook.w7.local` |
+| Dozzle (logs) | `http://logs.w7.local` |
+| Prometheus | `http://prom.w7.local` |
+| Grafana | `http://grafana.w7.local` |
+
+```bash
+# /etc/hosts
+127.0.0.1 git.w7.local webhook.w7.local logs.w7.local prom.w7.local grafana.w7.local
+```
+
+---
+
+## 📊 Observability
+
+Built-in Prometheus + Grafana + custom W7-aware exporter:
+
+- **`@ops/prometheus`** — scrapes `node-exporter` + `w7-exporter`
+- **`@ops/grafana`** — dashboards (default login: `admin` / `admin`)
+- **`@ops/node-exporter`** — host metrics
+- **`@ops/w7-exporter`** — translates `w7 doctor --json` + `w7 stat` into Prometheus metrics
+- **`@ops/dozzle`** — real-time container log streaming
+
+Custom metrics exposed:
+- `w7_healthy` — global system health (1/0)
+- `w7_error_count`, `w7_warning_count` — `doctor` results
+- `w7_containers_up{zone}` — per-zone container counts
+- `w7_policy_violation{zone, stack, policy}` — automated policy enforcement failures
+
+---
+
+## 🛡️ Policy Enforcement
+
+Static checks under `.shared/policy/` run during `w7 doctor`:
+
+- `prod-privileged.sh` — blocks `privileged: true` in `@prod`
+- `prod-no-root-mount.sh` — blocks host `/` or `/etc` mounts in `@prod`
+- `zone-ingress-naming.sh` — enforces `*.w7.local` naming convention
+
+---
+
+## 🧪 KNOWRAG — Knowledge Base & RAG sub-project
+
+`@lab/ll-KNOWRAG` is an in-flight local-first KB+RAG system extracted from [Archon](https://github.com/coleam00/archon). It ingests websites/documents, chunks and embeds content, and exposes retrieval via FastAPI, FastMCP, and a React UI.
+
+**Phase 7 (sealed):**
+- ✅ Recursive crawling with depth limits
+- ✅ `llms.txt` task expansion
+- ✅ Crawl4AI integration with httpx fallback for JS-rendered pages
+- ✅ Provider-based reranking with lexical fallback
+- ✅ UI overhaul with backend parity
+- ✅ 6 dogfood-found UI/API issues fixed
+
+**Phase 8 (planned — re-architecture pivot):**
+- 🔴 Replace Supabase/PostgREST with **Gitea + Qdrant** (Git as artifact source-of-truth, Qdrant for semantic search)
+- 🔴 Markdown frontmatter parser (tags, status, version, owner)
+- 🔴 Git-webhook-driven Qdrant ingestion pipeline
+- 🔴 Tailwind-based card-grid catalog UI
+- 🔴 Open WebUI + MCP integration
+
+See `@lab/ll-KNOWRAG/.omg/state/taskboard.md` for the full Phase 8 task plan.
+
+---
+
+## 📁 Repository Layout
+
+```
+.
+├── @ops/             Platform services (9 stacks)
+│   ├── gitea/        Local Git server (mirror + Actions host)
+│   ├── traefik/      Reverse proxy + ingress
+│   ├── webhook/      GitOps deploy listener (HMAC-signed)
+│   ├── act-runner/   Gitea Actions runner
+│   ├── dozzle/       Real-time container logs
+│   ├── prometheus/   Metrics server
+│   ├── grafana/      Dashboards
+│   ├── node-exporter/ Host metrics
+│   └── w7-exporter/  Custom W7 → Prometheus bridge
+├── @dev/             Development stacks
+│   ├── anythingllm/  LLM workspace + PG + Qdrant + SOPS secrets
+│   ├── skill-generator/ Claude skill builder (no compose stack)
+│   └── test-scaffold/ Init template fixture
+├── @prod/            Production-grade stacks
+│   └── whoami/       Pre-prod validation workload
+├── @lab/             Sandbox / experiments
+│   ├── ll-KNOWRAG/   KB + RAG system (Archon-derived)
+│   └── test-init/    Init template fixture
+├── .bin/             w7, sops, age (vendored)
+├── .shared/          Global env, policies, workflows, contract spec
+├── .claude/          Claude Code rules + skills (project instructions)
+└── docs/             Platform documentation
+```
+
+---
+
+## 📚 Documentation Map
+
+**Operator-facing:**
+- [README.md](README.md) — this file
+- [AGENTS.md](AGENTS.md) — agent/AI assistant guidance
+- [llms.txt](llms.txt) — LLM discovery file
+
+**Platform docs (`docs/`):**
+- [README-LLM.md](docs/README-LLM.md) — concise LLM-optimized platform guide
+- [KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md) — operational reference + troubleshooting
+- [ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md) — network topology + request flow
+- [API_REFERENCE.md](docs/API_REFERENCE.md) — CLI flags + `.w7-meta` schema
+- [SECURITY_POLICY.md](docs/SECURITY_POLICY.md) — zone isolation + trust boundaries
+- [CI_CD_EXAMPLES.md](docs/CI_CD_EXAMPLES.md) — Gitea Actions templates
+- [OBSERVABILITY.md](docs/OBSERVABILITY.md) — Prometheus + Grafana setup
+- [BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md) — automated backup guide
+- [DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) — full restoration steps
+- [USER_ONBOARDING.md](docs/USER_ONBOARDING.md) — Day 1 operator guide
+
+**Internal contracts (`.shared/`):**
+- [W7-CONTRACT.md](.shared/W7-CONTRACT.md) — directory + `.w7-meta` spec
+- [ENV_PRECEDENCE.md](.shared/ENV_PRECEDENCE.md) — env-file overlay rules
+- [SECRETS.md](.shared/SECRETS.md) — SOPS+AGE operator guide
+- [GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md) — webhook + runner design
+
+---
+
+## 🚑 Troubleshooting
+
+| Symptom | Cause / Fix |
+|---------|-------------|
+| `w7 go` says "directory not found" | You're running `.bin/w7` directly. `source ~/w7-base/.shared/w7.sh` to activate the shell wrapper. |
+| `w7 up @prod/...` fails | By design — `@prod` is gated. Use `--yes` to bypass interactively, or use the Gitea Actions path. |
+| Webhook silently doesn't deploy | Check `w7 logs @ops/webhook`. `docker compose config` validation failure auto-rolls-back the commit. |
+| `w7 doctor` warns about SOPS | Install `age` + `sops` and configure `~/.config/sops/age/keys.txt`. |
+| `*.w7.local` doesn't resolve | Add the hostnames to `/etc/hosts` (see § Ingress). |
+
+---
+
+## 🤖 GitOps Attack Surface (read this)
+
+The `@ops/webhook` and `@ops/act-runner` containers mount `/var/run/docker.sock` to execute `w7 up`. **If compromised, this gives root-equivalent host access.** Mitigations baked in:
+
+- HMAC-SHA256 signature verification on webhook payloads.
+- `docker compose config` pre-flight validation — rolls back the commit on failure.
+- Hard-blocked `@prod` deploys via the webhook path; `@prod` requires the Actions path with branch protection.
+
+**Never expose the webhook port (9000) or Gitea (3000) to the public internet** without zero-trust overlays (Tailscale, Cloudflare Tunnel, etc.).
+
+---
+
+## 🗺️ Roadmap
 
 | Feature | Status |
 |---------|--------|
-| `w7 init` — Scaffolding engine | Implemented |
-| `w7 doctor` — System validation | Implemented |
-| Secret management (SOPS/AGE) | Implemented |
-| Interactive `@prod` approvals | Planned |
-| Webhook audit logging | Planned |
-| Backup retention / restore | Planned |
----
-
-## 🌐 Network Routing & Ingress
-
-W7-Base utilizes **Traefik** (`@ops/traefik`) as its global reverse proxy. This eliminates port conflicts and allows you to access services via clean local domain names instead of mapping everything to `localhost:PORT`.
-
-### Default Local Domains
-| Service | Domain |
-|---|---|
-| Traefik Dashboard | `http://localhost:8080` |
-| Dozzle Logs | `http://logs.w7.local` |
-| Gitea | `http://git.w7.local` |
-| Webhook Listener | `http://webhook.w7.local` |
-| Whoami (Test) | `http://whoami.w7.local` |
-
-### Setting Up Local DNS
-To route `.w7.local` domains on your machine, add them to your `/etc/hosts` file (or equivalent for your OS):
-
-```text
-127.0.0.1 logs.w7.local git.w7.local webhook.w7.local whoami.w7.local
-```
-
-### Adding Ingress to a Stack
-When creating a new stack, ensure it connects to the `w7-ingress` external network and define Traefik labels in your `compose.yml`:
-
-```yaml
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.myapp.rule=Host(`myapp.w7.local`)"
-      - "traefik.http.services.myapp.loadbalancer.server.port=80"
-    networks:
-      - w7-ingress
-
-networks:
-  w7-ingress:
-    external: true
-```
+| `w7 init` scaffolding engine | ✅ Implemented |
+| `w7 doctor` system validation | ✅ Implemented |
+| SOPS+AGE secret management | ✅ Implemented |
+| Webhook GitOps + HMAC | ✅ Implemented |
+| Gitea Actions / runner integration | ✅ Implemented |
+| Traefik ingress + `*.w7.local` | ✅ Implemented |
+| Prometheus + Grafana + W7 exporter | ✅ Implemented |
+| Policy enforcement (privileged, root-mount, naming) | ✅ Implemented |
+| Backup retention + restore | ✅ Implemented |
+| Interactive `@prod` approvals | ✅ Implemented |
+| KNOWRAG Phase 8 — Gitea+Qdrant pivot | 🔴 Planned (next slice) |
+| Webhook audit logging | 📋 Planned |
 
 ---
 
-## 🤖 CI/CD with Gitea Actions
+## 🤝 Contributing
 
-W7-Base includes a local, integrated CI/CD pipeline powered by **Gitea Actions** and an isolated `act-runner` stack (`@ops/act-runner`). This allows you to run GitHub Actions-compatible workflows directly on your local infrastructure.
+This is a personal homelab/operator framework first, but suggestions and patches are welcome. Conventions:
 
-### 1. Enable Actions in Gitea
-Actions are pre-configured in the `@ops/gitea` stack's `compose.yml`, but you may need to ensure it's enabled in your repository settings:
-1. Navigate to your repository in Gitea (`http://git.w7.local`).
-2. Go to **Settings > General**.
-3. Check the **Enable Repository Actions** box.
-
-### 2. The Act-Runner Layout
-The `act-runner` stack is scaffolded identically to other W7 workloads:
-```text
-@ops/act-runner/
-├── .w7-meta          # W7 routing metadata
-├── compose.yml       # act_runner container configuration
-├── data/             # Persistent storage for runner state
-└── .env.example      # Required variables (URL, Token, Name)
-```
-
-### 3. Registering the Runner
-To connect the runner to your local Gitea instance, you must provide a registration token.
-
-1. In Gitea, navigate to **Site Administration > Actions > Runners** (for a global runner) or **Repository Settings > Actions > Runners** (for a repo-specific runner).
-2. Click **Create new Runner** and copy the **Registration Token**.
-3. Create an `.env` file in `@ops/act-runner/`:
-   ```bash
-   cp @ops/act-runner/.env.example @ops/act-runner/.env
-   ```
-4. Edit `@ops/act-runner/.env` and insert your token:
-   ```ini
-   GITEA_INSTANCE_URL=http://gitea-server:3000
-   GITEA_RUNNER_REGISTRATION_TOKEN=your_token_here
-   GITEA_RUNNER_NAME=w7-local-runner
-   ```
-5. Start the runner:
-   ```bash
-   w7 up @ops/act-runner
-   ```
-   *The runner will automatically register itself with Gitea on startup.*
-
-### 4. Networking Assumptions
-The `act-runner` container is attached to the `w7-ingress` Docker network. This allows it to resolve the `gitea-server` container directly via Docker's internal DNS without traversing the host network.
-
-*   **`GITEA_INSTANCE_URL=http://gitea-server:3000`**: The runner communicates with Gitea over the internal Docker network on port `3000`. It does *not* use the external `git.w7.local` domain to register, avoiding DNS loopback issues on the host.
-*   **Docker Socket**: The runner requires access to `/var/run/docker.sock` (configured in `compose.yml`) to spawn job containers.
-
-### What is Scaffolded vs. Operator Input
-*   **Scaffolded:** The W7 framework provides the `compose.yml`, the `w7-ingress` network attachment, and the `.env.example` template. The `act-runner` container is fully configured to read from these variables.
-*   **Operator Input:** You must manually generate the registration token in the Gitea UI, create the `.env` file, and paste the token. (Tokens cannot be securely pre-provisioned via git).
+- **Commits:** `type(scope): description` — types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`. See historical `git log`.
+- **Stacks:** Must follow the contract in [.shared/W7-CONTRACT.md](.shared/W7-CONTRACT.md).
+- **Secrets:** Never commit `.env`. Use `.env.example` for the schema and `.env.sops` for encrypted values.
+- **Policy:** New `@prod` stacks must pass `.shared/policy/*.sh` checks.
 
 ---
 
-## 📊 Observability & Monitoring
+## 📜 License
 
-W7-Base provides a built-in observability stack powered by **Prometheus** and **Grafana**, with custom exporters to visualize platform health.
+(To be added — currently unlicensed; treat as "all rights reserved" until a license is committed.)
 
-### 1. The Monitoring Stack
-The observability layer is located in the `@ops` zone:
-- **Prometheus** (`@ops/prometheus`): Scrapes metrics from platform services and exporters.
-- **Grafana** (`@ops/grafana`): Provides visualization and alerting.
-- **Node Exporter** (`@ops/node-exporter`): Exposes host-level hardware and OS metrics.
-- **W7 Exporter** (`@ops/w7-exporter`): A custom bridge that transforms `w7 doctor --json` and `w7 stat` data into Prometheus metrics.
+---
 
-### 2. Accessing Dashboards
-If you have local DNS configured, you can access the monitoring tools at:
-- **Prometheus UI:** `http://prom.w7.local`
-- **Grafana Dashboards:** `http://grafana.w7.local` (Default Login: `admin` / `admin`)
+## 🙏 Acknowledgements
 
-### 3. W7 Platform Metrics
-The `w7-exporter` provides the following unique metrics for local orchestration:
-- `w7_healthy`: Global system health (1 = Healthy, 0 = Unhealthy).
-- `w7_error_count` / `w7_warning_count`: Totals from the latest `doctor` run.
-- `w7_containers_up{zone="..."}`: Real-time container counts per deployment zone.
-- `w7_policy_violation{zone="...", stack="...", policy="..."}`: Tracks automated policy enforcement failures.
-
-### 4. Local Alerting
-Prometheus is pre-configured with local alerting rules. Alerts will trigger if:
-- The system remains in an "Unhealthy" state for more than 1 minute.
-- A policy violation (e.g., privileged container in `@prod`) is detected.
+- **[Archon](https://github.com/coleam00/archon)** — KB/RAG core reused and adapted in `@lab/ll-KNOWRAG`.
+- **[Traefik](https://traefik.io/)**, **[Gitea](https://gitea.io/)**, **[Prometheus](https://prometheus.io/)**, **[Grafana](https://grafana.com/)** — the platform substrate.
+- **[Mozilla SOPS](https://github.com/getsops/sops)** + **[AGE](https://github.com/FiloSottile/age)** — encrypted secrets.
+- **[Crawl4AI](https://github.com/unclecode/crawl4ai)** — JS-rendered crawling in KNOWRAG.
