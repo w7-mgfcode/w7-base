@@ -1,4 +1,5 @@
-# W7-Base Autopilot Workflow - COMPLETED
-- Mode: autopilot (controlled YOLO)
-- Status: Success
-- Result: Platform fully delivered.
+# Workflow State
+
+- **Mode:** team-assemble (approved)
+- **Active Cycle:** team-prd -> team-exec
+- **Target Worktree:** @lab/ll-KNOWRAG

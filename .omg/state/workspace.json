@@ -1,0 +1,65 @@
+{
+  "primary_root": "/home/w7-hector/w7-localbase",
+  "lanes": [
+    {
+      "id": "ops",
+      "path": "@ops",
+      "owner": "omg-director",
+      "purpose": "operational framework and CLI core",
+      "health": {
+        "cleanliness": "dirty",
+        "trusted": "trusted",
+        "handoff": "needs-review",
+        "notes": "Modifications in act-runner/compose.yml and .bin/w7."
+      }
+    },
+    {
+      "id": "dev",
+      "path": "@dev",
+      "owner": "omg-executor",
+      "purpose": "development stacks and local testing",
+      "health": {
+        "cleanliness": "clean",
+        "trusted": "trusted",
+        "handoff": "ready"
+      }
+    },
+    {
+      "id": "prod",
+      "path": "@prod",
+      "owner": "omg-verifier",
+      "purpose": "production-grade local deployments",
+      "health": {
+        "cleanliness": "clean",
+        "trusted": "trusted",
+        "handoff": "ready"
+      }
+    },
+    {
+      "id": "lab",
+      "path": "@lab",
+      "owner": "omg-consultant",
+      "purpose": "experimental and sandbox stacks",
+      "health": {
+        "cleanliness": "dirty",
+        "trusted": "untrusted",
+        "handoff": "blocked",
+        "notes": "Untracked changes in @lab/Mannos-sos/. Requires audit before handoff."
+      }
+    },
+    {
+      "id": "shared",
+      "path": ".shared",
+      "owner": "omg-architect",
+      "purpose": "global environment and cross-zone config",
+      "health": {
+        "cleanliness": "clean",
+        "trusted": "trusted",
+        "handoff": "ready",
+        "notes": "Shared state locked. Mutation requires explicit approval step."
+      }
+    }
+  ],
+  "cross_lane_policy": "strict-sequential-handoff-recommended",
+  "source": "omg:workspace audit"
+}

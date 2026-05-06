@@ -1,0 +1,27 @@
+{
+  "profile": "balanced",
+  "deterministic_event_lanes": true,
+  "lifecycle_symmetry": true,
+  "guardrails": {
+    "worker_session_side_effects": false,
+    "fail_open_lanes": ["P2-optimization"],
+    "fail_closed_lanes": ["P0-safety"],
+    "blocked_continuation_reentry": ["P0-safety"],
+    "terminal_hook_recording": "once_per_agent_turn",
+    "volatile_state_churn": false
+  },
+  "lanes": {
+    "P0-safety": {
+      "enabled": true,
+      "side_effects": false
+    },
+    "P1-quality": {
+      "enabled": true,
+      "side_effects": true
+    },
+    "P2-optimization": {
+      "enabled": true,
+      "side_effects": true
+    }
+  }
+}

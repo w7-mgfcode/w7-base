@@ -1,0 +1,11 @@
+{
+  "last_session_id": "177a7f7d-4311-4deb-b86e-299225e01942",
+  "last_event_key": "177a7f7d-4311-4deb-b86e-299225e01942:transcript:181645fcef5a94d1daae9158d9f9b18657e29080831e40be71cf3683ec7025b6",
+  "last_prompted_session_id": "",
+  "last_reason": "short-session",
+  "last_user_message_count": 1,
+  "last_actionable_message_count": 0,
+  "deep_interview_lock_active": false,
+  "deep_interview_lock_source": "/home/w7-hector/w7-localbase/.omg/state/deep-interview.json",
+  "updated_at": "2026-04-10T10:34:02.642Z"
+}
