@@ -128,6 +128,27 @@ def test_ensure_collection_uses_explicit_dim():
     assert kwargs["vectors_config"].size == 1024
 
 
+def test_ensure_collection_creates_payload_indexes_for_filter_fields():
+    from server.services.search.qdrant_indexer import FILTER_PAYLOAD_FIELDS
+    from qdrant_client.models import PayloadSchemaType
+    client = _fake_client(existing_collections=[])
+    indexer = QdrantIndexer(client=client, default_dim=4)
+    indexer.ensure_collection("public")
+    indexed = {
+        c.kwargs["field_name"]: c.kwargs["field_schema"]
+        for c in client.create_payload_index.call_args_list
+    }
+    assert set(indexed) == set(FILTER_PAYLOAD_FIELDS)
+    assert all(s == PayloadSchemaType.KEYWORD for s in indexed.values())
+
+
+def test_ensure_collection_skips_payload_indexes_when_collection_exists():
+    client = _fake_client(existing_collections=["kb_public"])
+    indexer = QdrantIndexer(client=client, default_dim=4)
+    indexer.ensure_collection("public")
+    client.create_payload_index.assert_not_called()
+
+
 # ── upsert ─────────────────────────────────────────────────────────────────
 
 

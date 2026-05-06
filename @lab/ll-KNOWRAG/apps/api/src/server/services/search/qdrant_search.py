@@ -58,10 +58,10 @@ class SearchFilters:
 
 
 class _QdrantClientProto(Protocol):
-    def search(
+    def query_points(
         self,
         collection_name: str,
-        query_vector,
+        query,
         limit: int,
         query_filter=None,
         with_payload: bool = True,
@@ -169,14 +169,17 @@ class QdrantSearch:
         name = collection_name(visibility)
         if not self._collection_exists(name):
             return []
-        results = self.client.search(
+        response = self.client.query_points(
             collection_name=name,
-            query_vector=list(query_vector),
+            query=list(query_vector),
             limit=k,
             query_filter=self._build_filter(filters),
             with_payload=True,
         )
-        return [self._hit_from_point(p) for p in results]
+        # qdrant-client 1.13+: query_points returns QueryResponse with .points;
+        # tolerate either shape so adapter mocks can pass a list directly.
+        points = getattr(response, "points", response)
+        return [self._hit_from_point(p) for p in points]
 
     # ── Centroid / related ────────────────────────────────────────────────
 

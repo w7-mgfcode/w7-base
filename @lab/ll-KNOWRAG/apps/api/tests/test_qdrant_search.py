@@ -118,29 +118,29 @@ def test_search_returns_empty_when_collection_missing():
     search = QdrantSearch(client=client)
     out = search.search(query_vector=[0.1, 0.2], visibility="public")
     assert out == []
-    client.search.assert_not_called()
+    client.query_points.assert_not_called()
 
 
 def test_search_passes_collection_and_top_k(client_with_collection):
-    client_with_collection.search.return_value = [_fake_point()]
+    client_with_collection.query_points.return_value = [_fake_point()]
     search = QdrantSearch(client=client_with_collection, default_top_k=15)
     search.search(query_vector=[0.1, 0.2], visibility="public", top_k=7)
-    args, kwargs = client_with_collection.search.call_args
+    args, kwargs = client_with_collection.query_points.call_args
     assert kwargs["collection_name"] == "kb_public"
     assert kwargs["limit"] == 7
-    assert kwargs["query_vector"] == [0.1, 0.2]
+    assert kwargs["query"] == [0.1, 0.2]
 
 
 def test_search_uses_default_top_k_when_unset(client_with_collection):
-    client_with_collection.search.return_value = []
+    client_with_collection.query_points.return_value = []
     search = QdrantSearch(client=client_with_collection, default_top_k=42)
     search.search(query_vector=[0.1], visibility="public")
-    _, kwargs = client_with_collection.search.call_args
+    _, kwargs = client_with_collection.query_points.call_args
     assert kwargs["limit"] == 42
 
 
 def test_search_parses_hits(client_with_collection):
-    client_with_collection.search.return_value = [
+    client_with_collection.query_points.return_value = [
         _fake_point(
             artifact_path="knowledge/a.md",
             chunk_index=2,
@@ -177,14 +177,14 @@ def test_search_rejects_nonpositive_top_k(client_with_collection):
 
 
 def test_search_passes_filter_when_supplied(client_with_collection):
-    client_with_collection.search.return_value = []
+    client_with_collection.query_points.return_value = []
     search = QdrantSearch(client=client_with_collection)
     search.search(
         query_vector=[0.1, 0.2],
         visibility="public",
         filters=SearchFilters(owner="alice"),
     )
-    _, kwargs = client_with_collection.search.call_args
+    _, kwargs = client_with_collection.query_points.call_args
     assert kwargs["query_filter"] is not None
 
 
@@ -256,7 +256,7 @@ def test_related_excludes_self_by_default(client_with_collection):
         None,
     )
     # Search returns a mix of self + others
-    client_with_collection.search.return_value = [
+    client_with_collection.query_points.return_value = [
         _fake_point(artifact_path="knowledge/x.md", chunk_index=0, score=0.99),
         _fake_point(artifact_path="knowledge/y.md", chunk_index=0, score=0.95),
         _fake_point(artifact_path="knowledge/x.md", chunk_index=1, score=0.94),
@@ -276,7 +276,7 @@ def test_related_keeps_self_when_exclude_false(client_with_collection):
         [_fake_vector_point(vector=[1.0, 1.0])],
         None,
     )
-    client_with_collection.search.return_value = [
+    client_with_collection.query_points.return_value = [
         _fake_point(artifact_path="knowledge/x.md", score=0.99),
         _fake_point(artifact_path="knowledge/y.md", score=0.95),
     ]

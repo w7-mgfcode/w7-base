@@ -20,6 +20,7 @@ from qdrant_client.models import (
     Filter,
     FilterSelector,
     MatchValue,
+    PayloadSchemaType,
     PointStruct,
     VectorParams,
 )
@@ -45,11 +46,15 @@ def stable_point_id(artifact_path: str, commit_sha: str, chunk_index: int) -> st
     return str(uuid.uuid5(POINT_ID_NAMESPACE, name))
 
 
+FILTER_PAYLOAD_FIELDS: tuple[str, ...] = ("tags", "status", "owner", "fm_id")
+
+
 class _QdrantClientProto(Protocol):
     """Subset of ``qdrant_client.QdrantClient`` we depend on (lets tests use a mock)."""
 
     def get_collections(self): ...
     def create_collection(self, collection_name: str, vectors_config): ...
+    def create_payload_index(self, collection_name: str, field_name: str, field_schema): ...
     def upsert(self, collection_name: str, points): ...
     def delete(self, collection_name: str, points_selector): ...
     def count(self, collection_name: str, count_filter=None, exact: bool = True): ...
@@ -76,7 +81,13 @@ class QdrantIndexer:
     # ── Collection management ─────────────────────────────────────────────
 
     def ensure_collection(self, visibility: str, *, dim: int | None = None) -> bool:
-        """Idempotently create the collection. Returns True if created."""
+        """Idempotently create the collection + filter payload indexes.
+
+        Returns True if the collection was created on this call. Payload
+        indexes for ``tags`` / ``status`` / ``owner`` / ``fm_id`` are built
+        as KEYWORD indexes so filtered kNN doesn't fall back to a full
+        payload scan.
+        """
         name = collection_name(visibility)
         existing = {c.name for c in self.client.get_collections().collections}
         if name in existing:
@@ -87,6 +98,16 @@ class QdrantIndexer:
             vectors_config=VectorParams(size=size, distance=self.distance),
         )
         logger.info("created Qdrant collection %s (dim=%d)", name, size)
+        for field in FILTER_PAYLOAD_FIELDS:
+            self.client.create_payload_index(
+                collection_name=name,
+                field_name=field,
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        logger.info(
+            "created %d payload indexes on %s: %s",
+            len(FILTER_PAYLOAD_FIELDS), name, ", ".join(FILTER_PAYLOAD_FIELDS),
+        )
         return True
 
     # ── Upsert ────────────────────────────────────────────────────────────

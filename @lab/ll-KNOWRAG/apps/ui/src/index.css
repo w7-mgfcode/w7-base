@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 /* KnowRAG Design System — 3-layer token taxonomy.
  * Layer 1: raw palette (literal values, not consumed directly).
@@ -81,3 +82,41 @@ body {
 .animate-pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
+
+/* Tailwind v4 prose-invert token bridge — maps the typography plugin's
+ * --tw-prose-invert-* vars to our @theme tokens so KB markdown renders
+ * native to the operator-console design system in dark mode.
+ * Per known-issue #375: applied on the `.prose-invert` selector directly,
+ * NOT via the `dark:` modifier (which fights with theme color modifiers). */
+.prose-invert {
+  --tw-prose-invert-body: var(--color-fg);
+  --tw-prose-invert-headings: var(--color-fg);
+  --tw-prose-invert-lead: var(--color-fg-muted);
+  --tw-prose-invert-links: var(--color-accent);
+  --tw-prose-invert-bold: var(--color-fg);
+  --tw-prose-invert-counters: var(--color-fg-muted);
+  --tw-prose-invert-bullets: var(--color-fg-subtle);
+  --tw-prose-invert-hr: var(--color-hairline);
+  --tw-prose-invert-quotes: var(--color-fg);
+  --tw-prose-invert-quote-borders: var(--color-accent);
+  --tw-prose-invert-captions: var(--color-fg-muted);
+  --tw-prose-invert-kbd: var(--color-fg);
+  --tw-prose-invert-kbd-shadows: 17 24 39;
+  --tw-prose-invert-code: var(--color-fg);
+  --tw-prose-invert-pre-code: var(--color-fg);
+  --tw-prose-invert-pre-bg: var(--color-surface-2);
+  --tw-prose-invert-th-borders: var(--color-hairline-strong);
+  --tw-prose-invert-td-borders: var(--color-hairline);
+}
+
+/* highlight.js theme — minimal token-bridged dark theme for code blocks
+ * inside `.prose-invert pre`. Avoids importing a full hljs CSS theme.   */
+.hljs { color: var(--color-fg); background: transparent; }
+.hljs-comment, .hljs-quote { color: var(--color-fg-subtle); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-section, .hljs-link { color: var(--color-accent); }
+.hljs-string, .hljs-attribute, .hljs-template-tag, .hljs-template-variable { color: var(--color-status-warn); }
+.hljs-symbol, .hljs-bullet, .hljs-meta { color: var(--color-status-info); }
+.hljs-number, .hljs-deletion { color: var(--color-status-err); }
+.hljs-title, .hljs-name, .hljs-built_in, .hljs-type, .hljs-variable { color: var(--color-fg); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }

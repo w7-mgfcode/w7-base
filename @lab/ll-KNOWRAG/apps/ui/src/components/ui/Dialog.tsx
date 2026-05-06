@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Dialog as RadixDialog } from 'radix-ui'
+import { Dialog as RadixDialog, VisuallyHidden } from 'radix-ui'
 import { X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
@@ -7,12 +7,21 @@ interface DialogProps {
   open: boolean
   onClose: () => void
   title: string
+  description?: string
   children: ReactNode
   footer?: ReactNode
   maxWidth?: string
 }
 
-export function Dialog({ open, onClose, title, children, footer, maxWidth = 'max-w-lg' }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  maxWidth = 'max-w-lg',
+}: DialogProps) {
   return (
     <RadixDialog.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <RadixDialog.Portal>
@@ -37,6 +46,15 @@ export function Dialog({ open, onClose, title, children, footer, maxWidth = 'max
               <X size={20} />
             </RadixDialog.Close>
           </div>
+          {description ? (
+            <RadixDialog.Description className="px-6 pt-2 text-sm text-fg-muted">
+              {description}
+            </RadixDialog.Description>
+          ) : (
+            <VisuallyHidden.Root>
+              <RadixDialog.Description>{title}</RadixDialog.Description>
+            </VisuallyHidden.Root>
+          )}
           <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
           {footer && (
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-hairline">

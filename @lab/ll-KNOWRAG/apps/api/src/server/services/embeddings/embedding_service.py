@@ -18,6 +18,23 @@ class EmbeddingService:
         self.dimension = dimension
         self.batch_size = 32
 
+    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Embed raw texts in batches; satisfies the ``Embedder`` protocol used
+        by Phase 8 indexing and retrieval coordinators."""
+        if not texts:
+            return []
+        all_embeddings: List[List[float]] = []
+        for i in range(0, len(texts), self.batch_size):
+            batch = texts[i:i + self.batch_size]
+            embeddings = await self.provider.get_embeddings(self.model, batch)
+            for emb in embeddings:
+                if len(emb) != self.dimension:
+                    raise ValueError(
+                        f"Embedding dimension mismatch: {len(emb)} != {self.dimension}"
+                    )
+            all_embeddings.extend(embeddings)
+        return all_embeddings
+
     async def embed_chunks(self, chunks: List[ChunkCreate]) -> List[ChunkCreate]:
         """
         Generates embeddings for a list of chunks in batches.
