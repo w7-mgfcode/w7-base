@@ -94,7 +94,10 @@ fi
 
 # ── State for cleanup ──────────────────────────────────────────────────────
 
-TEMP_BRANCH="verify-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+# Run-id prefixes seeded artifact paths so concurrent runs and re-runs don't
+# collide. Files are committed to the default branch (so the production
+# webhook fires) and removed from it on EXIT.
+RUN_ID="verify-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 SEEDED_PATHS=()
 TEMP_FIXTURE_DIR=""
 PRE_QDRANT_COUNT=0
@@ -102,21 +105,31 @@ PRE_QDRANT_COUNT=0
 cleanup() {
   local rc=$?
   if [[ "${W7_VERIFY_KEEP}" == "1" ]]; then
-    log_warn "--keep set: leaving temp branch '${TEMP_BRANCH}' and Qdrant points in place"
+    log_warn "--keep set: leaving seeded artifacts and Qdrant points in place"
     return $rc
   fi
-  log_step "cleanup: deleting temp branch '${TEMP_BRANCH}' and seeded artifacts"
-  # Delete each seeded artifact via Gitea API on the temp branch. The branch
-  # itself is then deleted; this also drops any Qdrant points whose
-  # commit_sha pointed to the removed commits, once a webhook reconcile fires.
+  log_step "cleanup: removing seeded artifacts from ${KB_BASE_BRANCH} + Qdrant"
   if [[ -n "${TEMP_FIXTURE_DIR}" && -d "${TEMP_FIXTURE_DIR}" ]]; then
     rm -rf "${TEMP_FIXTURE_DIR}"
   fi
-  # Delete temp branch (best-effort; ignore failures since the branch may not
-  # have been created yet).
-  gitea_api DELETE "/repos/${KB_OWNER}/${KB_REPO}/branches/${TEMP_BRANCH}" \
-    >/dev/null 2>>"${TRACE_LOG}" || true
-  # Best-effort: delete Qdrant points by artifact_path filter for our seeds.
+  # Delete each seeded file via Gitea API (creates a removal commit on the
+  # default branch; the webhook fires with status=removed and the pipeline
+  # drops the Qdrant points).
+  for path in "${SEEDED_PATHS[@]}"; do
+    local sha; sha=$(gitea_api GET "/repos/${KB_OWNER}/${KB_REPO}/contents/${path}?ref=${KB_BASE_BRANCH}" 2>>"${TRACE_LOG}" \
+      | jq -r '.sha // empty')
+    if [[ -n "$sha" ]]; then
+      local body; body=$(jq -nc \
+        --arg branch "$KB_BASE_BRANCH" \
+        --arg msg "verify: cleanup ${path}" \
+        --arg sha "$sha" \
+        '{branch:$branch, message:$msg, sha:$sha}')
+      gitea_api DELETE "/repos/${KB_OWNER}/${KB_REPO}/contents/${path}" "$body" \
+        >/dev/null 2>>"${TRACE_LOG}" || true
+    fi
+  done
+  # Backstop: directly drop Qdrant points by artifact_path filter, in case
+  # the removal-webhook hasn't fired yet by the time this run exits.
   for path in "${SEEDED_PATHS[@]}"; do
     local body
     body=$(jq -nc --arg p "$path" \
@@ -155,27 +168,20 @@ check_gitea_kb_repo() {
   return 1
 }
 
-ensure_temp_branch() {
-  # Create the temp branch from the base branch. Tolerates 'already exists'.
-  local body
-  body=$(jq -nc --arg new "$TEMP_BRANCH" --arg old "$KB_BASE_BRANCH" \
-    '{new_branch_name:$new, old_branch_name:$old}')
-  gitea_api POST "/repos/${KB_OWNER}/${KB_REPO}/branches" "$body" \
-    >/dev/null 2>>"${TRACE_LOG}" || true
-}
-
-# Commit one local file under <category>/<id>.md on TEMP_BRANCH.
+# Commit one local file under knowledge/<RUN_ID>-<id>.md on the default branch
+# so the production push webhook fires. Run-id prefixing makes paths unique
+# per run (concurrent runs and re-runs don't collide).
 seed_one() {
   local local_file="$1"
   local id; id=$(awk '/^id:/ {print $2; exit}' "$local_file")
   [[ -z "$id" ]] && { CHECK_DETAIL="fixture missing id: $local_file"; return 1; }
-  local target_path="knowledge/${id}.md"
+  local target_path="knowledge/${RUN_ID}-${id}.md"
   local content_b64
   content_b64=$(base64 < "$local_file" | tr -d '\n')
   local body
   body=$(jq -nc \
-    --arg branch "$TEMP_BRANCH" \
-    --arg msg   "verify: seed ${id}" \
+    --arg branch "$KB_BASE_BRANCH" \
+    --arg msg   "verify: seed ${RUN_ID}-${id}" \
     --arg c     "$content_b64" \
     '{branch:$branch, message:$msg, content:$c}')
   gitea_api POST "/repos/${KB_OWNER}/${KB_REPO}/contents/${target_path}" "$body" \
@@ -192,9 +198,7 @@ qdrant_point_count() {
 }
 
 check_ingestion() {
-  ensure_temp_branch
-
-  # Pre-count
+  # Pre-count: Qdrant baseline before seeding
   PRE_QDRANT_COUNT=$(qdrant_point_count)
 
   # Pick fixtures: --seed-from-memory wins if available, else built-ins.
@@ -231,10 +235,13 @@ check_ingestion() {
 
   # Wait for Qdrant to grow
   local target=$((PRE_QDRANT_COUNT + ${#fixtures[@]}))
-  if ! wait_until "Qdrant points_count > ${PRE_QDRANT_COUNT}" \
-    "[[ \$(curl -sS '${QDRANT_URL}/collections/kb_public' | jq -r '.result.points_count // 0') -gt ${PRE_QDRANT_COUNT} ]]" \
+  # Wait until ALL fixtures have ingested (>=1 chunk per path), not just
+  # the first webhook to land — /related needs every sibling indexed.
+  if ! wait_until "Qdrant points_count >= ${target}" \
+    "[[ \$(curl -sS '${QDRANT_URL}/collections/kb_public' | jq -r '.result.points_count // 0') -ge ${target} ]]" \
     60 2; then
-    CHECK_DETAIL="Qdrant did not grow within 60s (pre=${PRE_QDRANT_COUNT}, target>${PRE_QDRANT_COUNT})"
+    local got; got=$(qdrant_point_count)
+    CHECK_DETAIL="Qdrant did not reach target within 60s (pre=${PRE_QDRANT_COUNT}, target>=${target}, got=${got})"
     return 1
   fi
 
@@ -261,16 +268,16 @@ check_search() {
 }
 
 check_related() {
+  # Paths are RUN_ID-prefixed at seed time; query the first seeded path.
+  local first="${SEEDED_PATHS[0]:-}"
+  if [[ -z "$first" ]]; then
+    CHECK_DETAIL="no seeded baseline path to query"
+    return 1
+  fi
   local body
-  body=$(api_get "/api/artifacts/knowledge/verify-baseline.md/related?k=5" \
-    2>>"${TRACE_LOG}") || {
-    # Memory-mode: baseline is named differently — try the first seeded path.
-    local first="${SEEDED_PATHS[0]:-}"
-    [[ -z "$first" ]] && { CHECK_DETAIL="no seeded baseline path to query"; return 1; }
-    body=$(api_get "/api/artifacts/${first}/related?k=5" 2>>"${TRACE_LOG}") || {
-      CHECK_DETAIL="/related endpoint not reachable for ${first}"
-      return 1
-    }
+  body=$(api_get "/api/artifacts/${first}/related?k=5" 2>>"${TRACE_LOG}") || {
+    CHECK_DETAIL="/related endpoint not reachable for ${first}"
+    return 1
   }
   local n
   n=$(jq 'length' <<<"$body" 2>/dev/null || echo 0)

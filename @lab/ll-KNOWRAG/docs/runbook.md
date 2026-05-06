@@ -76,7 +76,7 @@ To enable LLM-situated contextual embeddings during ingestion:
 
 Use `w7 verify` to prove the deployed stack actually delivers the Phase 8 contract — not just that containers came up.
 
-> **Current live-stack baseline: 3/6 pass** (`dogfood-output/20260506T213008Z/`). The 3 failures (`ingestion.seed_and_grow`, `search.api_returns_hits`, `related.api_returns_3_plus`) all share one root cause: the Gitea-webhook receiver isn't bound to a FastAPI route — see [#19](https://github.com/w7-mgfcode/w7-base/issues/19). The api/gitea/MCP layers all pass; the harness exposed a real Phase 8 wiring gap.
+> **Current live-stack baseline: 6/6 pass** (`dogfood-output/20260506T224023Z/`). Full Phase 8 contract verified end-to-end: api healthy, KB repo reachable, 4 fixtures committed → 10 Qdrant chunks in 3.3s, search returns 10 hits, `/related` returns 3 siblings, MCP `rag_search_knowledge_base` responds. Total run: ~4s.
 
 The harness runs six checks in order against a live, running stack:
 
