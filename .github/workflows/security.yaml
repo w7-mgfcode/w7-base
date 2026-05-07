@@ -1,0 +1,97 @@
+name: Security
+
+# Three-tool security baseline:
+#   1. gitleaks       — secret scanning across the working tree
+#   2. trivy fs       — filesystem misconfig + vuln scan
+#   3. trivy config   — IaC scan of compose.yml + Dockerfiles
+#
+# CodeQL is intentionally NOT included — Bash is unsupported and the Python/TS
+# attack surface here is small enough that gitleaks + dependency-review cover
+# 80% of real risk for free. Revisit if KNOWRAG grows materially.
+#
+# Third-party actions are SHA-pinned per the March 2025 tj-actions CVE lesson.
+# When Dependabot bumps a SHA, it also updates the trailing version comment.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  schedule:
+    # Weekly Sunday 03:00 UTC — catches new CVEs against an unchanged tree
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write   # for SARIF upload (trivy)
+
+jobs:
+  gitleaks:
+    name: gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for diff-based scan
+
+      - name: Run gitleaks
+        # gitleaks/gitleaks-action — pinned by SHA, watched by Dependabot.
+        # When bumping, replace the SHA AND the trailing version comment.
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy-fs:
+    name: trivy (filesystem)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          # vuln-only — secret scanning is owned by the dedicated gitleaks job
+          # above; license + misconfig are out of scope for the fs job.
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          # advisory: dependabot security updates + the dependency-review job
+          # already gate new vulnerable deps at PR time; this scan publishes
+          # SARIF to code-scanning for ongoing visibility on existing pins.
+          # Promote to exit-code 1 once code-scanning shows a clean baseline.
+          exit-code: "0"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-fs.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+  trivy-config:
+    name: trivy (compose + Dockerfiles)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          # advisory for now — promote to exit-code 1 after a clean two-week window
+          exit-code: "0"
+          format: sarif
+          output: trivy-config.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config

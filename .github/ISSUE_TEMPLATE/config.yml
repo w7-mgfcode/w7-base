@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the docs first
+    url: https://github.com/w7-mgfcode/w7-base#readme
+    about: README, BRANCHING, RELEASE, and docs/ cover most operator questions.
+  - name: KNOWRAG-specific question?
+    url: https://github.com/w7-mgfcode/w7-base/tree/master/%40lab/ll-KNOWRAG
+    about: KNOWRAG has its own README, BLUEPRINT, runbook, and verify harness.

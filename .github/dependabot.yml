@@ -1,0 +1,25 @@
+# Dependabot — weekly bumps for GitHub Actions only.
+# Python (KNOWRAG api) and Node (KNOWRAG ui) ecosystems are intentionally
+# excluded for now — they would generate ~10 PRs/week against a sub-project
+# that is mid-pivot. Re-enable once KNOWRAG ships a stable knowrag-v1.0.0.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "type:chore"
+      - "deps:github-actions"
+    # Group all routine bumps to keep PR noise low; security bumps stay separate.
+    groups:
+      gha-routine:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

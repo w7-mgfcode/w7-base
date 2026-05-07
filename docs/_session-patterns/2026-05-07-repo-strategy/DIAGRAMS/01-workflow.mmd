@@ -1,0 +1,47 @@
+flowchart TB
+    user([User prompt: design the next slice]) --> P0
+    subgraph S0[Phase 0 - Prime]
+        P0[Inspect current repo state<br/>rules / workflows / hooks / docs / agents / branches / tags]
+        P0 --> BASE[CURRENT-STATE BASELINE]
+    end
+    BASE --> P1
+    subgraph S1[Phase 1 - V1 Continuation]
+        P1[Write V1: from today's reality, what should happen next?]
+        P1 --> V1[V1 plan: P0/P1 priorities + defer list]
+    end
+    V1 --> P2
+    subgraph S2[Phase 2 - Critique V1]
+        P2[Self-review: weak assumptions / risks / scope creep]
+        P2 --> CRIT[V1 critique]
+    end
+    CRIT --> P3
+    subgraph S3[Phase 3 - 3 parallel research agents read-only]
+        AA[Agent A: branching + hygiene]
+        AB[Agent B: CI/CD + release + actions]
+        AC[Agent C: agents + skills + hooks + visibility]
+    end
+    P3[Spawn agents in ONE message] --> AA
+    P3 --> AB
+    P3 --> AC
+    AA --> P4
+    AB --> P4
+    AC --> P4
+    subgraph S4[Phase 4 - Synthesize and rerank]
+        P4[Score 10-dim<br/>value/risk/readiness/complexity/maint/scope/reuse/ops/docs/evidence]
+        P4 --> V2[V2 ship list + defer list]
+    end
+    V2 --> P5
+    subgraph S5[Phase 5 - Execute]
+        P5A[5A repo-strategy artifacts]
+        P5B[5B CI/CD + release artifacts]
+        P5C[5C agents + skills + hooks artifacts]
+        P5D[5D reusable session-pattern package]
+        P5E[5E final report + follow-up issues]
+    end
+    P5 --> P5A --> P5B --> P5C --> P5D --> P5E
+    P5E --> DONE([Session complete<br/>+ pattern reusable for next project])
+
+    classDef phase fill:#1f2937,stroke:#60a5fa,color:#fff
+    classDef artifact fill:#064e3b,stroke:#10b981,color:#fff
+    class P0,P1,P2,P3,P4,P5,P5A,P5B,P5C,P5D,P5E phase
+    class BASE,V1,CRIT,V2,DONE artifact

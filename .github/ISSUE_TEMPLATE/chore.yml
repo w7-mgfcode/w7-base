@@ -1,0 +1,43 @@
+name: Chore / hygiene
+description: Repo, CI, docs, or tooling work that doesn't change runtime behavior.
+labels: ["type:chore"]
+body:
+  - type: dropdown
+    id: zone
+    attributes:
+      label: Where
+      options:
+        - "repo / root"
+        - ".github / .gitea / CI"
+        - ".claude rules / agents / skills / hooks"
+        - ".memo / .shared"
+        - "docs"
+        - "@ops / @dev / @prod stacks (non-runtime)"
+        - "@lab/ll-KNOWRAG (non-runtime)"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs to change
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: One paragraph. If the answer is "it's been bothering me", that's a valid reason.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+  - type: checkboxes
+    id: train
+    attributes:
+      label: Touches a release train?
+      options:
+        - label: Platform train (rare for chores)
+        - label: KNOWRAG train (rare for chores)
+        - label: Neither — no version bump

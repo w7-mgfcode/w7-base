@@ -1,0 +1,38 @@
+# CODEOWNERS — W7-Base
+# Format: <path-pattern> <owner-or-team>
+# Last match wins. Wildcards last.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# --- Platform layer ---
+/.shared/                       @w7-mgfcode
+/.bin/                          @w7-mgfcode
+/.github/                       @w7-mgfcode
+/.gitea/                        @w7-mgfcode
+/.claude/                       @w7-mgfcode
+/.memo/                         @w7-mgfcode
+
+# --- Zones ---
+/@ops/                          @w7-mgfcode
+/@dev/                          @w7-mgfcode
+/@prod/                         @w7-mgfcode
+/@lab/                          @w7-mgfcode
+
+# --- Sub-projects ---
+/@lab/ll-KNOWRAG/               @w7-mgfcode
+# When a KNOWRAG team forms, swap the line above for:
+#   /@lab/ll-KNOWRAG/                 @knowrag-team
+#   /@lab/ll-KNOWRAG/apps/api/        @knowrag-backend
+#   /@lab/ll-KNOWRAG/apps/ui/         @knowrag-frontend
+#   /@lab/ll-KNOWRAG/apps/mcp/        @knowrag-backend
+
+# --- Docs and visibility ---
+/README.md                      @w7-mgfcode
+/AGENTS.md                      @w7-mgfcode
+/CLAUDE.md                      @w7-mgfcode
+/llms.txt                       @w7-mgfcode
+/BRANCHING.md                   @w7-mgfcode
+/RELEASE.md                     @w7-mgfcode
+/docs/                          @w7-mgfcode
+
+# --- Catch-all (must be last) ---
+*                               @w7-mgfcode

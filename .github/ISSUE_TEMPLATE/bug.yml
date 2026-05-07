@@ -1,0 +1,69 @@
+name: Bug report
+description: Something is broken in W7-Base or one of its sub-projects.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please give enough context that a maintainer can reproduce.
+  - type: dropdown
+    id: zone
+    attributes:
+      label: Zone affected
+      options:
+        - "@ops"
+        - "@dev"
+        - "@prod"
+        - "@lab/ll-KNOWRAG"
+        - ".shared / .bin / platform-wide"
+        - "repo / CI / docs"
+        - "Unknown"
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Stack (if applicable)
+      placeholder: "@lab/ll-KNOWRAG, @ops/gitea, …"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Observed behavior. Include error messages verbatim.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Numbered steps. The smaller the repro, the faster the fix.
+      placeholder: |
+        1. `w7 up @lab/ll-KNOWRAG`
+        2. `curl http://localhost:8181/health`
+        3. observe …
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Docker version, `w7 doctor --json` excerpt
+      render: shell
+  - type: textarea
+    id: verify
+    attributes:
+      label: "`w7 verify` output (KNOWRAG only)"
+      render: shell
+  - type: checkboxes
+    id: secrets
+    attributes:
+      label: Secret hygiene
+      options:
+        - label: I confirm no secret values are pasted in this issue
+          required: true
