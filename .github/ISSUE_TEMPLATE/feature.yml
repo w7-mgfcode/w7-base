@@ -1,0 +1,63 @@
+name: Feature request
+description: Propose new behavior in W7-Base or a sub-project.
+labels: ["type:feat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, check that the proposal aligns with `.claude/rules/product-vision.md`. If unclear, file anyway and tick the "vision-review needed" box below.
+  - type: dropdown
+    id: zone
+    attributes:
+      label: Zone affected
+      options:
+        - "@ops"
+        - "@dev"
+        - "@prod"
+        - "@lab/ll-KNOWRAG"
+        - ".shared / .bin / platform-wide"
+        - "repo / CI / docs"
+        - "New zone or sub-project"
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem are you solving? Who benefits?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How would the feature work? Use bullets, not prose.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: scope
+    attributes:
+      label: Out of scope
+      description: What this issue is explicitly NOT trying to do.
+  - type: dropdown
+    id: train
+    attributes:
+      label: Affects which release train?
+      options:
+        - "Platform"
+        - "KNOWRAG"
+        - "Both"
+        - "Neither (no version bump)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: vision
+    attributes:
+      label: Vision alignment
+      options:
+        - label: Aligns with single-host / Compose-only / zone-first principles
+        - label: Vision-review needed (potential tension with `product-vision.md`)
