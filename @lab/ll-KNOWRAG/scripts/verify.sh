@@ -6,8 +6,9 @@
 #   2. gitea.kb_repo_exists      — KB repo is reachable via Gitea API
 #   3. ingestion.seed_and_grow   — seed fixtures → Qdrant points grow
 #   4. search.api_returns_hits   — search returns ≥1 hit for seeded fixture
-#   5. related.api_returns_3_plus— /related returns ≥3 sibling artifacts
-#   6. mcp.search_returns_hits   — MCP rag_search_knowledge_base returns hits
+#   5. ui_catalog.proxy_returns  — UI nginx proxy returns ≥4 artifacts via :3737
+#   6. related.api_returns_3_plus— /related returns ≥3 sibling artifacts
+#   7. mcp.search_returns_hits   — MCP rag_search_knowledge_base returns hits
 #
 # Run via:  bash scripts/verify.sh   (or)   w7 verify @lab/ll-KNOWRAG
 #
@@ -59,11 +60,13 @@ fi
 
 API_HOST_PORT="${API_PORT:-8181}"
 MCP_HOST_PORT="${MCP_PORT:-8051}"
+UI_HOST_PORT="${UI_PORT:-3737}"
 GITEA_HOST_PORT="${GITEA_HTTP_PORT:-3030}"
 QDRANT_HOST_PORT="${QDRANT_PORT:-6333}"
 
 API_URL="${VERIFY_API_URL:-http://localhost:${API_HOST_PORT}}"
 MCP_URL="${VERIFY_MCP_URL:-http://localhost:${MCP_HOST_PORT}}"
+UI_URL="${VERIFY_UI_URL:-http://localhost:${UI_HOST_PORT}}"
 GITEA_URL="${VERIFY_GITEA_URL:-http://localhost:${GITEA_HOST_PORT}/api/v1}"
 QDRANT_URL="${VERIFY_QDRANT_URL:-http://localhost:${QDRANT_HOST_PORT}}"
 
@@ -298,6 +301,21 @@ check_search() {
   return 1
 }
 
+check_ui_catalog() {
+  # Hits the UI's nginx proxy at :${UI_PORT}/api/artifacts. Asserts the proxy
+  # is wired (regression guard for #46) and that the catalog has ≥4 artifacts
+  # — the same floor used by check_ingestion (baseline + 3 related).
+  local count
+  count=$(curl -fsS --max-time 5 "${UI_URL}/api/artifacts" 2>>"${TRACE_LOG}" \
+    | jq '. | length' 2>/dev/null || echo 0)
+  if [[ "${count:-0}" -lt 4 ]]; then
+    CHECK_DETAIL="UI proxy returned ${count} artifacts via ${UI_URL} (need ≥4 — proxy may be broken)"
+    return 1
+  fi
+  CHECK_DETAIL="UI proxy returned ${count} artifacts via ${UI_URL}"
+  return 0
+}
+
 check_related() {
   # Paths are RUN_ID-prefixed at seed time; query the first seeded path.
   local first="${SEEDED_PATHS[0]:-}"
@@ -366,6 +384,7 @@ run_check "api.health"               check_api_health     critical || true
 run_check "gitea.kb_repo_exists"     check_gitea_kb_repo  critical || true
 run_check "ingestion.seed_and_grow"  check_ingestion      high     || true
 run_check "search.api_returns_hits"  check_search         high     || true
+run_check "ui_catalog.proxy_returns" check_ui_catalog     high     || true
 run_check "related.api_returns_3_plus" check_related      high     || true
 run_check "mcp.search_returns_hits"  check_mcp_search     medium   || true
 
