@@ -48,3 +48,40 @@ w7.tmp
 w7_new
 w7_top.sh
 w7.bak
+
+# --- Project-shared Claude Code config (root only, surgical allow-list) ---
+# Override the broad .claude/ + *.sh/*.py ignores ONLY for the specific
+# team-shared paths this repo treats as canonical project config. User-local
+# skills/commands and per-machine state stay ignored.
+# Sub-project .claude/ trees (e.g. @lab/ll-KNOWRAG/.claude/) are NOT touched —
+# they keep their existing local-only convention.
+!/.claude/
+!/.claude/rules/
+!/.claude/rules/*.md
+!/.claude/agents/
+!/.claude/agents/*.md
+!/.claude/hooks/
+!/.claude/hooks/*.sh
+!/.claude/hooks/*.py
+!/.claude/settings.json
+
+# Skills: include the directory but only un-ignore the project-shared ones.
+# (User-local skills like analyzing-ai-repos, prompt-architect, etc. stay
+# ignored. To share a new skill, add a `!/.claude/skills/<name>/**` line.)
+!/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/repo-visibility-audit/
+!/.claude/skills/repo-visibility-audit/**
+!/.claude/skills/commit-format-check/
+!/.claude/skills/commit-format-check/**
+!/.claude/skills/audit-rules-drift/
+!/.claude/skills/audit-rules-drift/**
+
+# User-local Claude paths (not project-shared) at the root .claude/
+/.claude/commands/
+/.claude/settings.local.json
+/.claude/projects/
+/.claude/cache/
+/.claude/credentials*
+/.claude/oauth*
+/.claude/.local*
