@@ -10,9 +10,23 @@ W7-Base standardizes local infrastructure management through a directory-based z
 - **Security & Compliance:** SOPS/AGE secret sealing, interactive `@prod` gates, and static policy enforcement.
 - **Advanced Observability:** Built-in Prometheus/Grafana stack with custom W7 platform metrics.
 
-## Key Documents
+## Operator-facing
 - [README.md](README.md): Main operator overview and installation guide.
+- [AGENTS.md](AGENTS.md): Agent and AI-assistant guidance for this monorepo.
+
+## Platform Documentation
 - [docs/README-LLM.md](docs/README-LLM.md): Concise, LLM-optimized technical usage guide.
 - [docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md): Detailed operational reference and troubleshooting guide.
+- [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md): Network topology and request flow.
+- [docs/API_REFERENCE.md](docs/API_REFERENCE.md): `w7` CLI flags and `.w7-meta` schema.
+- [docs/SECURITY_POLICY.md](docs/SECURITY_POLICY.md): Zone isolation and trust boundaries.
+- [docs/CI_CD_EXAMPLES.md](docs/CI_CD_EXAMPLES.md): Gitea Actions workflow templates.
+- [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md): Prometheus and Grafana setup.
+- [docs/BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md): Automated backup guide.
+- [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md): Full restoration steps.
+- [docs/USER_ONBOARDING.md](docs/USER_ONBOARDING.md): Day 1 operator guide.
+- [docs/OMG_GEMINI_AI_WORKFRAME_KB.md](docs/OMG_GEMINI_AI_WORKFRAME_KB.md): Working KB for the `oh-my-gemini-cli` orchestration framework.
+
+## Internal Contracts
 - [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md): Core GitOps and deployment engine architecture.
 - [.shared/SECRETS.md](.shared/SECRETS.md): Secret management and SOPS operator guide.

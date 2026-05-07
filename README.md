@@ -308,6 +308,7 @@ See `@lab/ll-KNOWRAG/.omg/state/taskboard.md` for the full Phase 8 task plan.
 - [BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md) — automated backup guide
 - [DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) — full restoration steps
 - [USER_ONBOARDING.md](docs/USER_ONBOARDING.md) — Day 1 operator guide
+- [OMG_GEMINI_AI_WORKFRAME_KB.md](docs/OMG_GEMINI_AI_WORKFRAME_KB.md) — `oh-my-gemini-cli` orchestration framework KB
 
 **Internal contracts (`.shared/`):**
 - [W7-CONTRACT.md](.shared/W7-CONTRACT.md) — directory + `.w7-meta` spec
