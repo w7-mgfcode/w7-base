@@ -52,6 +52,9 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          # vuln-only — secret scanning is owned by the dedicated gitleaks job
+          # above, which is tuned for this repo's expected pattern surface.
+          scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
