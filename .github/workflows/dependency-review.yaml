@@ -1,0 +1,29 @@
+name: Dependency review
+
+# Blocks PRs that introduce vulnerable or wrong-licensed dependencies.
+# Diff-only — runs only on pull_request, never on push.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write   # so the action can comment on the PR
+
+jobs:
+  review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          # License allow-list — additive over time; start permissive, narrow as
+          # the supply chain stabilizes.
+          allow-licenses: >-
+            MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MPL-2.0,
+            CC0-1.0, Unlicense, 0BSD, Python-2.0, PSF-2.0

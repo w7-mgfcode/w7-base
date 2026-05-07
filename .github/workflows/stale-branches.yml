@@ -1,0 +1,45 @@
+name: Stale branch cleanup
+
+# Weekly cleaner for unmerged feature branches.
+#   - 30 d stale  -> warn (comment on related PR/issue)
+#   - 60 d stale  -> archive (rename to archived/<branch>) and close related PR
+#
+# Opt out by prefixing the branch `keep/`. Branches with an open PR are never
+# auto-archived — only the related PR gets a stale comment.
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"   # Mondays 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    name: Cleanup stale branches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove stale branches
+        # fpicalausa/remove-stale-branches — pinned by SHA, watched by Dependabot.
+        uses: fpicalausa/remove-stale-branches@77a4f9b4f5c6b2c4dfb3b1d8f3a96b7b0b2a8d18 # v1.6.0
+        with:
+          dry-run: false
+          stale-branch-age: 30
+          suggestions-cool-off-days: 7
+          delete-branch-age: 60
+          exempt-branches-regex: '^(master|main|HEAD|keep/.*|archived/.*)$'
+          default-recipient: "w7-mgfcode"
+          stale-branch-message: |
+            👋 This branch has been inactive for 30 days.
+
+            If it's still wanted, push a commit, comment here, or rename it to `keep/<slug>` to opt out of auto-archival.
+            Otherwise it will be **archived to `archived/<branch>`** in 30 more days.
+
+            See `BRANCHING.md` § 8 for the policy.
+          # The action archives instead of deleting outright when delete-branch-age trips.
+          archive-stale-branches: true
