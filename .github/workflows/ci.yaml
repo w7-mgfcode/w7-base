@@ -12,7 +12,7 @@ jobs:
     name: Validate Docker Compose stacks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Discover stacks
         id: discover
@@ -50,7 +50,7 @@ jobs:
     name: Run W7 policy scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: prod-privileged
         run: bash .shared/policy/prod-privileged.sh || exit 1
@@ -65,7 +65,7 @@ jobs:
     name: Stack contract structure
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Verify each stack has the required contract files
         run: |

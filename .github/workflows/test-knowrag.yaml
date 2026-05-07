@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: "@lab/ll-KNOWRAG/apps/api"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -60,7 +60,7 @@ jobs:
       run:
         working-directory: "@lab/ll-KNOWRAG/apps/ui"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Node
         uses: actions/setup-node@v6
