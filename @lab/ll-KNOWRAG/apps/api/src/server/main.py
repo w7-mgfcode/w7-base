@@ -4,41 +4,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from server.api_routes import knowledge_api, rag_api, pages_api, upload_api, artifacts_api, ingest_api
+from server.api_routes import artifacts_api, ingest_api
 from server.config.config import settings
-from server.dependencies import provider_svc, crawler_mgr
+from server.dependencies import provider_svc
 
 logger = logging.getLogger("uvicorn.error")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Set log level
     logging.getLogger().setLevel(settings.log_level.upper())
-    
-    # Startup validation
+
     logger.info("Performing startup model validation...")
-    
-    # Check embedding model
     emb_ok = await provider_svc.check_model(settings.embedding_model)
     if not emb_ok:
         logger.warning(f"EMBEDDING_MODEL '{settings.embedding_model}' not found at {provider_svc.base_url}!")
     else:
         logger.info(f"EMBEDDING_MODEL '{settings.embedding_model}' verified.")
-        
-    # Check chat model if contextual embeddings are enabled
-    if settings.use_contextual_embeddings:
-        chat_ok = await provider_svc.check_model(settings.chat_model)
-        if not chat_ok:
-            logger.warning(f"CHAT_MODEL '{settings.chat_model}' not found at {provider_svc.base_url}, but USE_CONTEXTUAL_EMBEDDINGS is enabled!")
-        else:
-            logger.info(f"CHAT_MODEL '{settings.chat_model}' verified.")
-            
-    # Check reranking fallback
+
     if settings.use_reranking:
         logger.info("USE_RERANKING enabled (using Lexical Boost fallback).")
-        
-    # Start Crawl4AI browser
-    await crawler_mgr.startup()
 
     # Phase 8 bootstrap: ensure KB repo + directory shape + webhook on Gitea.
     # Best-effort — log and proceed if Gitea is misconfigured so the app can
@@ -69,12 +53,8 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown browser
-    await crawler_mgr.shutdown()
-
 app = FastAPI(title="KnowRAG API", lifespan=lifespan)
 
-# Add CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -83,11 +63,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(knowledge_api.router)
-app.include_router(upload_api.router)
-app.include_router(rag_api.router)
-app.include_router(pages_api.router)
 app.include_router(artifacts_api.router)
 app.include_router(ingest_api.router)
 

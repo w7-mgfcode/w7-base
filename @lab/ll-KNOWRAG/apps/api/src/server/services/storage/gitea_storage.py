@@ -16,9 +16,6 @@ Public surface:
 Path safety, file-size limits, optimistic concurrency, and clear exception
 typing for the caller. All HTTP is via httpx — pass a ``MockTransport``
 client in tests.
-
-The legacy ``StorageOperations`` (PostgREST) class is kept until T7 migrates
-all callers. Do not extend it.
 """
 from __future__ import annotations
 

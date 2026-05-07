@@ -1,8 +1,11 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from fastmcp import FastMCP
+
 from mcp_server.api_client import KnowRagApiClient
-from mcp_server.features.rag.rag_tools import register_rag_tools
+from mcp_server.features.rag.rag_tools import _coerce_str_list, register_rag_tools
 
 
 def _setup():
@@ -34,45 +37,18 @@ def test_session_info_includes_base_url():
     assert "KnowRAG MCP Server" in text
 
 
-def test_rag_get_available_sources_formats_output():
-    mcp, client = _setup()
-    client.list_sources = AsyncMock(return_value=[
-        {"source_id": "docs", "title": "Documentation", "source_url": "https://docs.example.com"},
-    ])
-    text = _call(mcp, "rag_get_available_sources")
-    assert "docs" in text
-    assert "Documentation" in text
-
-
-def test_rag_get_available_sources_empty():
-    mcp, client = _setup()
-    client.list_sources = AsyncMock(return_value=[])
-    text = _call(mcp, "rag_get_available_sources")
-    assert "No knowledge sources found" in text
-
-
-def test_rag_search_knowledge_base_chunk_mode():
-    mcp, client = _setup()
-    client.search_kb = AsyncMock(return_value={
-        "results": [{"content": "hello world", "source_id": "test-src", "similarity": 0.9}],
-        "total_results": 1,
-    })
-    text = _call(mcp, "rag_search_knowledge_base", {"query": "greeting", "mode": "chunk", "limit": 3})
-    assert "hello world" in text
-    assert "test-src" in text
-    client.search_kb.assert_called_once_with("greeting", mode="chunk", limit=3, use_hybrid=False, use_reranking=False)
-
-
-def test_rag_read_full_page_error_handling():
-    mcp, client = _setup()
-    client.get_page = AsyncMock(side_effect=Exception("not found"))
-    text = _call(mcp, "rag_read_full_page", {"page_id": "bad-id"})
-    assert "Error" in text
-    assert "not found" in text
-
-
-def test_start_crawl_job_returns_id():
-    mcp, client = _setup()
-    client.start_crawl = AsyncMock(return_value={"crawl_id": "abc-123"})
-    text = _call(mcp, "start_crawl_job", {"url": "https://example.com"})
-    assert "abc-123" in text
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (None, None),
+        ("", None),
+        ("  ", None),
+        (["a", "b"], ["a", "b"]),
+        ([1, 2], ["1", "2"]),
+        ('["a","b"]', ["a", "b"]),
+        ("a,b , c", ["a", "b", "c"]),
+        ("solo", ["solo"]),
+    ],
+)
+def test_coerce_str_list_normalizes_inputs(value, expected):
+    assert _coerce_str_list(value) == expected
