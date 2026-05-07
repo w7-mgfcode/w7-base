@@ -1,12 +1,8 @@
-"""RAG retrieval coordinator (Phase 8 — T8).
+"""RAG retrieval coordinator.
 
 Composes embed → search (vector or hybrid) → optional rerank → optional
-page grouping. Replaces the Phase-7 ``RagService`` whose retrieval backend
-was Supabase RPCs.
-
-API contract preserved at the *response shape* level so ``rag_api.py`` and
-the MCP tools don't see a change downstream — only the storage backend
-swaps.
+page grouping. Drives the ``/api/artifacts/search`` and
+``/api/artifacts/{path}/related`` routes.
 """
 from __future__ import annotations
 
