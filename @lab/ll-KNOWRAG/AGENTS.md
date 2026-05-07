@@ -4,7 +4,7 @@ This stack follows a strict **RESEARCH -> BRAINSTORM -> VALIDATE** workflow. Ret
 
 ## Stack Scope
 
-This file applies to `@lab/ll-KNOWRAG`. It supplements the root [`AGENTS.md`](/home/w7-hector/w7-localbase/AGENTS.md) with stack-specific research and validation rules.
+This file applies to `@lab/ll-KNOWRAG`. It supplements the root [`AGENTS.md`](../../AGENTS.md) with stack-specific research and validation rules.
 
 ## Architecture At A Glance
 
