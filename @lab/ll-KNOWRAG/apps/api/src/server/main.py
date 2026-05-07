@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from server.api_routes import artifacts_api, ingest_api
+from server.api_routes import artifacts_api, ingest_api, rag_api
 from server.config.config import settings
 from server.dependencies import provider_svc
 
@@ -65,6 +65,7 @@ app.add_middleware(
 
 app.include_router(artifacts_api.router)
 app.include_router(ingest_api.router)
+app.include_router(rag_api.router)
 
 @app.get("/", tags=["Root"])
 async def root():

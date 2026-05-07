@@ -8,6 +8,15 @@ class Settings(BaseSettings):
     embedding_model: str = "nomic-embed-text"
     embedding_dimension: int = 768
 
+    # Chat-completions provider (used by /api/rag/query for generation).
+    # CHAT_BASE_URL=""  → auto-default to OLLAMA_BASE_URL.
+    # CHAT_PROVIDER is informational ("ollama" | "openai-compat") — provider
+    # selection inside LLMProviderService is URL-based, not env-based.
+    chat_provider: str = Field(default="ollama", validation_alias="CHAT_PROVIDER")
+    chat_model: str = Field(default="llama3.2:1b", validation_alias="CHAT_MODEL")
+    chat_base_url: str = Field(default="", validation_alias="CHAT_BASE_URL")
+    chat_api_key: str = Field(default="", validation_alias="CHAT_API_KEY")
+
     # Qdrant
     qdrant_host: str = Field(default="qdrant", validation_alias="QDRANT_HOST")
     qdrant_port: int = Field(default=6333, validation_alias="QDRANT_PORT")
