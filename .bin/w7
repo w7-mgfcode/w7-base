@@ -30,6 +30,8 @@ usage() {
   echo "  --running       (verify) Assume stack is up (default)"
   echo "  --seed-from-memory (verify) Seed fixtures from \${CLAUDE_PROJECT_DIR}/memory/"
   echo "  --keep          (verify) Skip cleanup of temp branch / Qdrant points"
+  echo "  --apply         (seed) Push staged artifacts to Gitea (default: stage only)"
+  echo "  --dry-run       (seed) Print plan, write nothing"
   echo ""
   echo "Commands:"
   echo "  up <stack|all>  Start a stack (wraps docker compose up -d)"
@@ -47,6 +49,7 @@ usage() {
   echo "  net             Network port mapping visibility"
   echo "  prune           Cleanup unused Docker resources (with guardrails)"
   echo "  verify <stack>  Run stack-local end-to-end smoke (calls <stack>/scripts/verify.sh)"
+  echo "  seed <stack>    Stage / push monorepo docs into stack KB (calls <stack>/scripts/seed-monorepo.sh)"
   echo "  resolve <stack> Internal: print resolved stack path"
 }
 
@@ -63,6 +66,8 @@ W7_VERIFY_COLD_FLAG=0
 W7_VERIFY_RUNNING_FLAG=0
 W7_VERIFY_SEED_FLAG=0
 W7_VERIFY_KEEP_FLAG=0
+W7_SEED_APPLY_FLAG=0
+W7_SEED_DRY_RUN_FLAG=0
 
 # Simple flag parser
 POSITIONAL_ARGS=()
@@ -105,12 +110,26 @@ while [[ $# -gt 0 ]]; do
       W7_VERIFY_KEEP_FLAG=1
       shift
       ;;
+    --apply)
+      W7_SEED_APPLY_FLAG=1
+      shift
+      ;;
+    --dry-run)
+      W7_SEED_DRY_RUN_FLAG=1
+      shift
+      ;;
     *)
       POSITIONAL_ARGS+=("$1")
       shift
       ;;
   esac
 done
+
+# Mutually exclusive seed modes
+if [[ "$W7_SEED_APPLY_FLAG" == "1" && "$W7_SEED_DRY_RUN_FLAG" == "1" ]]; then
+  echo -e "\033[0;31m[ERROR]\033[0m --apply and --dry-run are mutually exclusive" >&2
+  exit 1
+fi
 
 # Mutually exclusive verify modes
 if [[ "$W7_VERIFY_COLD_FLAG" == "1" && "$W7_VERIFY_RUNNING_FLAG" == "1" ]]; then
@@ -763,6 +782,32 @@ EOF
     if [[ "$W7_JSON" == "1" && -f "${W7_VERIFY_OUTPUT_DIR}/result.json" ]]; then
       cat "${W7_VERIFY_OUTPUT_DIR}/result.json"
     fi
+    exit $EXIT
+    ;;
+  seed)
+    if [[ -z "$TARGET" ]]; then
+      log_error "Stack name required. Usage: w7 seed <stack> [--apply|--dry-run]"
+      exit 1
+    fi
+    SPATH=$(resolve_stack "$TARGET")
+    if [[ ! -x "${SPATH}/scripts/seed-monorepo.sh" ]]; then
+      log_error "Stack '${TARGET}' has no executable scripts/seed-monorepo.sh — feature not supported by this stack."
+      exit 2
+    fi
+
+    # Decrypt secrets if needed (--apply reads .env for GITEA_TOKEN etc.)
+    setup_env "$SPATH"
+
+    set +e
+    if [[ "$W7_SEED_APPLY_FLAG" == "1" ]]; then
+      bash "${SPATH}/scripts/seed-monorepo.sh" --apply
+    elif [[ "$W7_SEED_DRY_RUN_FLAG" == "1" ]]; then
+      bash "${SPATH}/scripts/seed-monorepo.sh" --dry-run
+    else
+      bash "${SPATH}/scripts/seed-monorepo.sh"
+    fi
+    EXIT=$?
+    set -e
     exit $EXIT
     ;;
   doctor)
