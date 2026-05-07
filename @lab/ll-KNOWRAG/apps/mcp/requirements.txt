@@ -10,7 +10,7 @@ caio==0.9.25
 certifi==2026.2.25
 cffi==2.0.0
 click==8.3.1
-cryptography==46.0.6
+cryptography==46.0.7
 cyclopts==4.10.1
 dnspython==2.8.0
 docstring_parser==0.17.0
