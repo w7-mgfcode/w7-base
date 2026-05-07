@@ -64,6 +64,37 @@ To enable LLM-situated contextual embeddings during ingestion:
 - **Health**: `http://localhost:8181/health`
 - **Swagger Docs**: `http://localhost:8181/docs`
 
+### Configuring RAG generation
+
+`POST /api/rag/query` runs vector retrieval and asks the configured chat-completions provider to answer the question grounded in the retrieved chunks. Retrieval-only callers (`POST /api/artifacts/search`, `GET /api/artifacts/{path}/related`) do not need a chat provider.
+
+**Env vars** (defaults work out-of-the-box once a chat model is pulled):
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `CHAT_PROVIDER` | `ollama` | Informational tag in responses (`ollama` \| `openai-compat`) |
+| `CHAT_MODEL` | `llama3.2:1b` | Model identifier passed to the provider |
+| `CHAT_BASE_URL` | *(blank → falls back to `OLLAMA_BASE_URL`)* | Override only if your chat endpoint differs from embeddings |
+| `CHAT_API_KEY` | *(blank)* | Required only for OpenAI-compatible providers |
+
+**One-time setup (default Ollama path):**
+
+```bash
+docker exec -it knowrag-ollama ollama pull llama3.2:1b
+```
+
+(Pick any chat model your host can run — `llama3.2:1b` is small and CPU-friendly.)
+
+**Verifying:**
+
+```bash
+curl -sS -X POST http://localhost:8181/api/rag/query \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "What does the webhook flow do?", "match_count": 3}' | jq .
+```
+
+**Failure modes (structured 503):** when the chat provider is unreachable or the model isn't pulled, the endpoint returns 503 with `error_code` set to `chat_provider_unavailable` or `chat_model_unavailable` plus the retrieved hits intact under `retrieved_context`, so a UI can fall back to retrieval-only without a second round-trip.
+
 ## MCP Integration
 - **Port**: `8051` (Transport: HTTP)
 - **Tools**: `health_check`, `session_info`, `rag_search_knowledge_base`, `rag_get_available_sources`, `rag_list_pages_for_source`, `rag_read_full_page`.

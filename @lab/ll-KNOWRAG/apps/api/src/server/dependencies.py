@@ -28,6 +28,14 @@ reranking_svc = RerankingService(
     top_n=settings.reranking_top_n,
 )
 
+# Chat-completions singleton — auto-defaults to the embedding (Ollama) URL
+# when CHAT_BASE_URL is unset, so a stock `w7 up` already has a chat path
+# reachable as soon as the operator pulls a chat model.
+chat_provider_svc = LLMProviderService(
+    settings.chat_base_url or settings.embedding_provider_url,
+    api_key=settings.chat_api_key or None,
+)
+
 # ── Qdrant singletons ──────────────────────────────────────────────────────
 qdrant_client: QdrantClient = QdrantClient(
     host=settings.qdrant_host,
@@ -79,6 +87,10 @@ def get_rag_coordinator() -> RagCoordinator:
 
 def get_embedding_svc() -> EmbeddingService:
     return embedding_svc
+
+
+def get_chat_provider_svc() -> LLMProviderService:
+    return chat_provider_svc
 
 
 async def get_ingestion_pipeline():
