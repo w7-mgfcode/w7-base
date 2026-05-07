@@ -1,0 +1,21 @@
+flowchart TB
+    user([User]) -->|prompt| main[Main Session]
+    rules[".claude/rules/*.md<br/>always-on policy"] -.injected.-> main
+    main -->|invokes| skills[".claude/skills/*<br/>repo-visibility-audit<br/>audit-rules-drift<br/>commit-format-check"]
+    main -->|delegates| agents[".claude/agents/*<br/>repo-visibility-manager<br/>policy-gatekeeper<br/>knowrag-investigator"]
+    agents -->|may call| skills
+    main -->|tool call| hooks{{".claude/settings.json hooks"}}
+    hooks -->|PreToolUse blocks bad commits| commitcheck[".claude/hooks/check-commit-format.sh"]
+    hooks -->|SessionStart / End / PreCompact| memo[".memo/hooks/*.py"]
+    skills -->|reads| policy[".shared/policy/*.sh"]
+    agents -->|reads| policy
+    memo -->|writes| memart[".memo/daily/*.md<br/>session memory"]
+    main -->|git push| ci{{".github/workflows/<br/>ci / lint / security /<br/>dep-review / test-knowrag /<br/>stale-branches"}}
+    main -.local push.-> gitea{{".gitea/workflows/<br/>policy + deploy"}}
+
+    classDef policy fill:#7f1d1d,stroke:#f87171,color:#fff
+    classDef tool fill:#1e3a8a,stroke:#60a5fa,color:#fff
+    classDef memory fill:#064e3b,stroke:#10b981,color:#fff
+    class rules,policy,commitcheck policy
+    class skills,agents,hooks,ci,gitea tool
+    class memo,memart memory
