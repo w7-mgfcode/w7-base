@@ -28,5 +28,7 @@ W7-Base standardizes local infrastructure management through a directory-based z
 - [docs/OMG_GEMINI_AI_WORKFRAME_KB.md](docs/OMG_GEMINI_AI_WORKFRAME_KB.md): Working KB for the `oh-my-gemini-cli` orchestration framework.
 
 ## Internal Contracts
+- [.shared/W7-CONTRACT.md](.shared/W7-CONTRACT.md): Stack directory and `.w7-meta` schema.
+- [.shared/ENV_PRECEDENCE.md](.shared/ENV_PRECEDENCE.md): Env-file overlay precedence rules.
 - [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md): Core GitOps and deployment engine architecture.
 - [.shared/SECRETS.md](.shared/SECRETS.md): Secret management and SOPS operator guide.
