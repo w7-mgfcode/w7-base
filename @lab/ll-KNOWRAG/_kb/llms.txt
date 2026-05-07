@@ -1,18 +1,80 @@
-# W7-Base
+# W7-Base — KNOWRAG seed manifest
 
-> Local-first orchestration and GitOps platform built on Docker Compose and the unified `w7` CLI.
+> Canonical ingestion contract for `scripts/seed-monorepo.sh`. Each entry below is a path (relative to repo root) that gets pulled into `kb-default` on `w7 kb seed`. Categorization is path-heuristic: `.claude/rules/*` + `.claude/agents/*` → `prompts/`, `.claude/skills/*` → `skills/`, `.claude/hooks/*` → `hooks/`, `apps/mcp/*` → `mcp/`, everything else → `knowledge/`. Edit this file to change what KNOWRAG ingests; it is intentionally divergent from the public-discovery `llms.txt` at the repo root.
 
-W7-Base standardizes local infrastructure management through a directory-based zone model, providing a seamless transition from development to production with built-in compliance and observability.
+## Platform overview
+- [README.md](README.md): Operator overview and installation guide.
+- [AGENTS.md](AGENTS.md): Agent and AI-assistant guidance for the monorepo.
+- [CLAUDE.md](CLAUDE.md): Project instructions for Claude Code (terse policy index).
+- [BRANCHING.md](BRANCHING.md): Branching and release strategy.
+- [RELEASE.md](RELEASE.md): Release cadence and tag-cut procedure.
 
-## Platform Features
-- **Zone Isolation:** Life-cycle separation across `@ops`, `@dev`, `@prod`, and `@lab`.
-- **Hybrid GitOps:** High-speed webhook synchronization combined with pipeline-driven Gitea Actions.
-- **Security & Compliance:** SOPS/AGE secret sealing, interactive `@prod` gates, and static policy enforcement.
-- **Advanced Observability:** Built-in Prometheus/Grafana stack with custom W7 platform metrics.
+## Platform documentation
+- [docs/README-LLM.md](docs/README-LLM.md): LLM-optimized concise platform guide.
+- [docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md): Operational reference and troubleshooting.
+- [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md): Network topology and request flow.
+- [docs/API_REFERENCE.md](docs/API_REFERENCE.md): `w7` CLI flags and `.w7-meta` schema.
+- [docs/SECURITY_POLICY.md](docs/SECURITY_POLICY.md): Zone isolation and trust boundaries.
+- [docs/CI_CD_EXAMPLES.md](docs/CI_CD_EXAMPLES.md): Gitea Actions workflow templates.
+- [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md): Prometheus and Grafana setup.
+- [docs/BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md): Automated backup guide.
+- [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md): Full restoration steps.
+- [docs/USER_ONBOARDING.md](docs/USER_ONBOARDING.md): Day 1 operator guide.
+- [docs/OMG_GEMINI_AI_WORKFRAME_KB.md](docs/OMG_GEMINI_AI_WORKFRAME_KB.md): `oh-my-gemini-cli` framework KB.
+- [docs/_session-patterns/2026-05-07-repo-strategy/PATTERN.md](docs/_session-patterns/2026-05-07-repo-strategy/PATTERN.md): 2026-05-07 repo-strategy session pattern.
+- [docs/_session-patterns/2026-05-07-repo-strategy/SOURCES.md](docs/_session-patterns/2026-05-07-repo-strategy/SOURCES.md): 2026-05-07 session sources.
 
-## Key Documents
-- [README.md](README.md): Main operator overview and installation guide.
-- [docs/README-LLM.md](docs/README-LLM.md): Concise, LLM-optimized technical usage guide.
-- [docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md): Detailed operational reference and troubleshooting guide.
-- [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md): Core GitOps and deployment engine architecture.
-- [.shared/SECRETS.md](.shared/SECRETS.md): Secret management and SOPS operator guide.
+## Internal contracts
+- [.shared/W7-CONTRACT.md](.shared/W7-CONTRACT.md): Stack directory and `.w7-meta` schema.
+- [.shared/ENV_PRECEDENCE.md](.shared/ENV_PRECEDENCE.md): Env-file overlay precedence rules.
+- [.shared/SECRETS.md](.shared/SECRETS.md): SOPS+AGE operator guide.
+- [.shared/SECRETS_DESIGN.md](.shared/SECRETS_DESIGN.md): Secret management design notes.
+- [.shared/GITOPS_DESIGN.md](.shared/GITOPS_DESIGN.md): Webhook + runner GitOps design.
+
+## Platform stacks (@ops)
+- [@ops/act-runner/README.md](@ops/act-runner/README.md): Gitea Actions runner.
+- [@ops/act-runner/AGENTS.md](@ops/act-runner/AGENTS.md): Act-runner agent guidance.
+- [@ops/gitea/README.md](@ops/gitea/README.md): Local Gitea server.
+- [@ops/gitea/AGENTS.md](@ops/gitea/AGENTS.md): Gitea agent guidance.
+- [@ops/node-exporter/README.md](@ops/node-exporter/README.md): Host-metrics exporter.
+- [@ops/node-exporter/AGENTS.md](@ops/node-exporter/AGENTS.md): Node-exporter agent guidance.
+- [@ops/prometheus/README.md](@ops/prometheus/README.md): Prometheus metrics server.
+- [@ops/prometheus/AGENTS.md](@ops/prometheus/AGENTS.md): Prometheus agent guidance.
+- [@ops/traefik/README.md](@ops/traefik/README.md): Traefik ingress.
+- [@ops/traefik/AGENTS.md](@ops/traefik/AGENTS.md): Traefik agent guidance.
+- [@ops/w7-exporter/README.md](@ops/w7-exporter/README.md): Custom W7 → Prometheus bridge.
+- [@ops/w7-exporter/AGENTS.md](@ops/w7-exporter/AGENTS.md): W7-exporter agent guidance.
+- [@ops/webhook/README.md](@ops/webhook/README.md): GitOps webhook listener.
+- [@ops/webhook/AGENTS.md](@ops/webhook/AGENTS.md): Webhook agent guidance.
+
+## ll-KNOWRAG sub-project
+- [@lab/ll-KNOWRAG/README.md](@lab/ll-KNOWRAG/README.md): KNOWRAG operator overview.
+- [@lab/ll-KNOWRAG/BLUEPRINT.md](@lab/ll-KNOWRAG/BLUEPRINT.md): Phase 8 architecture canon.
+- [@lab/ll-KNOWRAG/PRD.md](@lab/ll-KNOWRAG/PRD.md): Product requirements doc.
+- [@lab/ll-KNOWRAG/CLAUDE.md](@lab/ll-KNOWRAG/CLAUDE.md): KNOWRAG project instructions for Claude.
+- [@lab/ll-KNOWRAG/AGENTS.md](@lab/ll-KNOWRAG/AGENTS.md): KNOWRAG agent/AI guidance.
+- [@lab/ll-KNOWRAG/docs/runbook.md](@lab/ll-KNOWRAG/docs/runbook.md): Operational runbook.
+- [@lab/ll-KNOWRAG/docs/api-contracts.md](@lab/ll-KNOWRAG/docs/api-contracts.md): API endpoints and MCP tool contracts.
+- [@lab/ll-KNOWRAG/docs/schema.md](@lab/ll-KNOWRAG/docs/schema.md): Frontmatter / data-model schema.
+- [@lab/ll-KNOWRAG/docs/archon-porting-map.md](@lab/ll-KNOWRAG/docs/archon-porting-map.md): Archon source mapping with Phase 8 deprecation notes.
+- [@lab/ll-KNOWRAG/.claude/rules/docker-infra.md](@lab/ll-KNOWRAG/.claude/rules/docker-infra.md): KNOWRAG-specific docker/infra rules (→ prompts/).
+
+## Project rules → prompts/
+- [.claude/rules/branch-naming.md](.claude/rules/branch-naming.md): Branch naming policy.
+- [.claude/rules/commit-format.md](.claude/rules/commit-format.md): Commit message format.
+- [.claude/rules/output-formatting.md](.claude/rules/output-formatting.md): Skill / report output format.
+- [.claude/rules/product-vision.md](.claude/rules/product-vision.md): Product vision and negative guardrails.
+- [.claude/rules/security-patterns.md](.claude/rules/security-patterns.md): Security patterns and forbidden code.
+- [.claude/rules/test-requirements.md](.claude/rules/test-requirements.md): Test coverage requirements.
+- [.claude/rules/ui-design.md](.claude/rules/ui-design.md): UI design workflow rules.
+- [.claude/rules/versioning.md](.claude/rules/versioning.md): Two-train SemVer policy.
+
+## Specialist agents → prompts/
+- [.claude/agents/knowrag-investigator.md](.claude/agents/knowrag-investigator.md): KNOWRAG failure investigator.
+- [.claude/agents/policy-gatekeeper.md](.claude/agents/policy-gatekeeper.md): W7 policy verdict agent.
+- [.claude/agents/repo-visibility-manager.md](.claude/agents/repo-visibility-manager.md): Public-surface audit agent.
+
+## Skills → skills/
+- [.claude/skills/audit-rules-drift/SKILL.md](.claude/skills/audit-rules-drift/SKILL.md): Detect drift between rules and code.
+- [.claude/skills/commit-format-check/SKILL.md](.claude/skills/commit-format-check/SKILL.md): Validate staged commit message.
+- [.claude/skills/repo-visibility-audit/SKILL.md](.claude/skills/repo-visibility-audit/SKILL.md): Read-only audit of public-facing surface.
