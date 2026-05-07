@@ -73,9 +73,9 @@ Automated checks run during `w7 doctor`:
 *See `.shared/GITOPS_DESIGN.md` for deep-dive on deployment logic.*
 
 ## Deep-Dive Documentation
-- [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md): Metrics, Grafana, and alerting.
-- [docs/SECURITY_POLICY.md](docs/SECURITY_POLICY.md): Zone isolation and trust model.
-- [docs/CI_CD_EXAMPLES.md](docs/CI_CD_EXAMPLES.md): Gitea Actions workflow templates.
-- [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md): Network and deployment topology.
-- [docs/BACKUP_SCRIPTS.md](docs/BACKUP_SCRIPTS.md): Automation for data protection.
-- [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md): Platform restoration guide.
+- [OBSERVABILITY.md](OBSERVABILITY.md): Metrics, Grafana, and alerting.
+- [SECURITY_POLICY.md](SECURITY_POLICY.md): Zone isolation and trust model.
+- [CI_CD_EXAMPLES.md](CI_CD_EXAMPLES.md): Gitea Actions workflow templates.
+- [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md): Network and deployment topology.
+- [BACKUP_SCRIPTS.md](BACKUP_SCRIPTS.md): Automation for data protection.
+- [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md): Platform restoration guide.
