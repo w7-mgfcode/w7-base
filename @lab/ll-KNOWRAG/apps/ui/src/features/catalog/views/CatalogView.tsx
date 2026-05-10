@@ -16,13 +16,13 @@ import {
   ArtifactCategory,
   ArtifactSummary,
   Status,
+  STATUS_VALUES,
   categoryFromPath,
 } from '../types'
 import { Button } from '../../../components/ui/Button'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Spinner } from '../../../components/ui/Spinner'
 
-const STATUS_VALUES = ['draft', 'review', 'published'] as const
 const CATEGORY_VALUES = ARTIFACT_CATEGORIES
 
 export function CatalogView() {

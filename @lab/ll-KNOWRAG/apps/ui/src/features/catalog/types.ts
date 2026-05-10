@@ -1,8 +1,11 @@
 // Phase 8 artifact types — match the API server's Pydantic models
 // (server/models/storage.py, server/services/knowledge/frontmatter.py).
 
-export type Status = 'draft' | 'review' | 'published'
-export type Visibility = 'public' | 'private'
+export const STATUS_VALUES = ['draft', 'review', 'published'] as const
+export type Status = (typeof STATUS_VALUES)[number]
+
+export const VISIBILITY_VALUES = ['public', 'private'] as const
+export type Visibility = (typeof VISIBILITY_VALUES)[number]
 
 export const ARTIFACT_CATEGORIES = [
   'prompts',

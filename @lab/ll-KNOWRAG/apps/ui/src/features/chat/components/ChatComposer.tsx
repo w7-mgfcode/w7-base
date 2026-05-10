@@ -9,10 +9,12 @@ import {
 } from 'nuqs'
 import { Button } from '../../../components/ui/Button'
 import type { RagQueryRequest } from '../types'
-import type { Status, Visibility } from '../../catalog/types'
-
-const VISIBILITY_VALUES = ['public', 'private'] as const
-const STATUS_VALUES = ['draft', 'review', 'published'] as const
+import {
+  STATUS_VALUES,
+  VISIBILITY_VALUES,
+  type Status,
+  type Visibility,
+} from '../../catalog/types'
 
 interface ChatComposerProps {
   onSubmitMessage: (req: RagQueryRequest) => void
