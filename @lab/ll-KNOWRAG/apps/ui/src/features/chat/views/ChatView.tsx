@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Spinner } from '../../../components/ui/Spinner'
@@ -21,14 +21,21 @@ export function ChatView() {
   const threadRef = useRef<HTMLElement | null>(null)
   const mutation = useRagQuery()
 
-  useLayoutEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTo({
-        top: threadRef.current.scrollHeight,
-        behavior: 'smooth',
-      })
-    }
-  }, [messages.length])
+  // Auto-scroll: smooth only when a new assistant message lands (response feels
+  // alive); instant for the user's own append (no animation needed for input
+  // they just typed). Skip when already at the bottom to avoid stacking smooth
+  // animations on rapid appends.
+  const lastRole = messages[messages.length - 1]?.role
+  useEffect(() => {
+    const el = threadRef.current
+    if (!el || messages.length === 0) return
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 4) return
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: lastRole === 'assistant' ? 'smooth' : 'auto',
+    })
+  }, [messages.length, lastRole])
 
   function handleSubmitMessage(req: RagQueryRequest) {
     const now = Date.now()
