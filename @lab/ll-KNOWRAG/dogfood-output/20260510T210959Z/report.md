@@ -6,11 +6,20 @@
 
 ## Verification mode
 
-**No-screenshot.** `agent-browser` requires `--no-sandbox` on this Ubuntu 26
-host (kernel disallows unprivileged user namespaces by default), and that
-flag is gated by W7-Base's "Create Unsafe Agents" rule. Visual dogfood is
-deferred to the operator; this report captures everything verifiable without
-a live browser sandbox.
+**Live browser via `agent-browser`** (Ubuntu 26 host, `--no-sandbox` flag
+authorized once via `.claude/settings.local.json`). Visual confirmation of
+all four key flows captured below; the live-API + bundle-inspection trail
+follows for review under-the-hood.
+
+## Screenshots
+
+| # | File | What it proves |
+|---|---|---|
+| 01 | `01-catalog-default.png` | AppShell header + tabs + status pill render correctly. Catalog still works — no regression from #56. |
+| 02 | `02-chat-empty-state.png` | `?view=chat` renders the new `ChatView` empty state (message-circle icon, "Ask the knowledge base anything", ⌘+Enter / Ctrl+Enter hint) + the `ChatComposer` pinned to the footer. |
+| 03 | `03-chat-composer-filled.png` | Textarea accepts input, accent focus ring active, Ask button enabled. |
+| 04 | `04-chat-degraded-response.png` | **Headline shot.** User message right-aligned bubble; assistant bubble renders `DegradedNotice` with the warn-tinted "Chat model unavailable" label, the live backend message, the **copy-able `docker exec -it knowrag-ollama ollama pull llama3.2:1b`** command (trailing period correctly stripped by the regex fix), and 5 retrieved-context source chips `[1]..[5]`. Never blanks out. |
+| 05 | `05-source-chip-deep-link.png` | Clicking chip `[1] docs-readme-llm.md` navigates to `?view=catalog&a=knowledge/docs-readme-llm.md`; Catalog tab activates; `ArtifactDetail` opens with the cited artifact. The nuqs `useQueryStates({view, a})` round-trip works. |
 
 ## Stack state
 
