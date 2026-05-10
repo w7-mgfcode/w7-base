@@ -2,6 +2,7 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { AppShell } from './shell/AppShell'
 import { VIEW_VALUES } from './shell/ViewTabs'
 import { CatalogView } from './features/catalog/views/CatalogView'
+import { ChatView } from './features/chat/views/ChatView'
 import { EmptyState } from './components/ui/EmptyState'
 
 function Placeholder({ name }: { name: string }) {
@@ -25,7 +26,7 @@ function App() {
   return (
     <AppShell>
       {view === 'chat' ? (
-        <Placeholder name="Chat" />
+        <ChatView />
       ) : view === 'operator' ? (
         <Placeholder name="Operator" />
       ) : (
