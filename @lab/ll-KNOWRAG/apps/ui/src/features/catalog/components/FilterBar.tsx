@@ -69,7 +69,13 @@ export function FilterBar({
   )
 
   const activeFilterCount =
-    (category ? 1 : 0) + tags.length + status.length + (owner ? 1 : 0)
+    (category ? 1 : 0) +
+    tags.length +
+    status.length +
+    (owner ? 1 : 0) +
+    (vis !== 'public' ? 1 : 0) +
+    (hybrid ? 1 : 0) +
+    (rerank ? 1 : 0)
 
   function toggleTag(tag: string) {
     onTagsChange(

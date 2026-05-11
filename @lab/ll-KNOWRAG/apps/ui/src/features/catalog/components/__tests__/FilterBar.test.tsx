@@ -83,4 +83,30 @@ describe('FilterBar Scope subsection', () => {
     const html = container.innerHTML
     expect(html).not.toMatch(/\bbg-status-(ok|warn|err)\b(?!\/)/)
   })
+
+  it('shows the Clear button when only scope filters are non-default', () => {
+    const { rerender } = render(<FilterBar {...baseProps()} />)
+    expect(
+      screen.queryByRole('button', { name: /Clear/i }),
+    ).not.toBeInTheDocument()
+
+    rerender(<FilterBar {...baseProps({ vis: 'private' })} />)
+    expect(
+      screen.getByRole('button', { name: /Clear \(1\)/i }),
+    ).toBeInTheDocument()
+
+    rerender(<FilterBar {...baseProps({ hybrid: true })} />)
+    expect(
+      screen.getByRole('button', { name: /Clear \(1\)/i }),
+    ).toBeInTheDocument()
+
+    rerender(
+      <FilterBar
+        {...baseProps({ vis: 'private', hybrid: true, rerank: true })}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: /Clear \(3\)/i }),
+    ).toBeInTheDocument()
+  })
 })
