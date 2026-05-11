@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { X } from 'lucide-react'
+import { Switch, ToggleGroup } from 'radix-ui'
 import {
   ARTIFACT_CATEGORIES,
   ArtifactCategory,
@@ -34,10 +35,16 @@ export function FilterBar({
   tags,
   status,
   owner,
+  vis,
+  hybrid,
+  rerank,
   onCategoryChange,
   onTagsChange,
   onStatusChange,
   onOwnerChange,
+  onVisChange,
+  onHybridChange,
+  onRerankChange,
   onClearAll,
 }: FilterBarProps) {
   const tagCounts = useMemo(() => {
@@ -144,11 +151,52 @@ export function FilterBar({
         {activeFilterCount > 0 && (
           <button
             onClick={onClearAll}
-            className="ml-auto text-xs text-fg-muted hover:text-fg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-1"
+            className="text-xs text-fg-muted hover:text-fg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-1"
           >
             Clear ({activeFilterCount})
           </button>
         )}
+
+        <div
+          className="ml-auto flex items-center gap-2 max-w-full"
+          aria-label="Search scope controls"
+        >
+          <span className="text-[11px] text-fg-subtle uppercase tracking-wide mr-1">
+            Scope
+          </span>
+          <ToggleGroup.Root
+            type="single"
+            value={vis}
+            onValueChange={(v) => {
+              if (v === 'public' || v === 'private') onVisChange(v)
+            }}
+            className="flex items-center"
+            aria-label="Visibility"
+          >
+            <ToggleGroup.Item
+              value="public"
+              className="text-xs px-2 py-1 rounded-l-control border border-hairline text-fg-muted bg-surface-2 hover:text-fg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=on]:bg-accent/15 data-[state=on]:text-accent data-[state=on]:border-accent/40"
+            >
+              public
+            </ToggleGroup.Item>
+            <ToggleGroup.Item
+              value="private"
+              className="text-xs px-2 py-1 rounded-r-control border border-l-0 border-hairline text-fg-muted bg-surface-2 hover:text-fg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=on]:bg-accent/15 data-[state=on]:text-accent data-[state=on]:border-accent/40"
+            >
+              private
+            </ToggleGroup.Item>
+          </ToggleGroup.Root>
+          <ScopeSwitch
+            label="hybrid"
+            checked={hybrid}
+            onCheckedChange={onHybridChange}
+          />
+          <ScopeSwitch
+            label="rerank"
+            checked={rerank}
+            onCheckedChange={onRerankChange}
+          />
+        </div>
       </div>
 
       {topTags.length > 0 && (
@@ -187,6 +235,30 @@ export function FilterBar({
 
 function Divider() {
   return <span className="w-px h-5 bg-hairline" aria-hidden />
+}
+
+function ScopeSwitch({
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  label: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-fg-muted cursor-pointer select-none">
+      <Switch.Root
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        aria-label={label}
+        className="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full border border-hairline bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=checked]:border-accent/40 data-[state=checked]:bg-accent/15 cursor-pointer"
+      >
+        <Switch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-fg-muted transition-transform data-[state=checked]:translate-x-3.5 data-[state=checked]:bg-accent" />
+      </Switch.Root>
+      <span className={checked ? 'text-accent' : undefined}>{label}</span>
+    </label>
+  )
 }
 
 function CategoryChip({
