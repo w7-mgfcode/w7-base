@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  parseAsBoolean,
   parseAsString,
   parseAsArrayOf,
   parseAsStringLiteral,
@@ -40,6 +41,18 @@ export function CatalogView() {
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault([]),
   )
   const [owner, setOwner] = useQueryState('owner', parseAsString)
+  const [vis, setVis] = useQueryState(
+    'vis',
+    parseAsStringLiteral(['public', 'private'] as const).withDefault('public'),
+  )
+  const [hybrid, setHybrid] = useQueryState(
+    'hybrid',
+    parseAsBoolean.withDefault(false),
+  )
+  const [rerank, setRerank] = useQueryState(
+    'rerank',
+    parseAsBoolean.withDefault(false),
+  )
   const [selectedPath, setSelectedPath] = useQueryState('a', parseAsString)
   const [paletteOpen, setPaletteOpen] = useState(false)
 
@@ -76,6 +89,9 @@ export function CatalogView() {
     setTags([])
     setStatusList([])
     setOwner(null)
+    setVis('public')
+    setHybrid(false)
+    setRerank(false)
   }
 
   function handleSelect(path: string) {
@@ -102,10 +118,16 @@ export function CatalogView() {
         tags={tags}
         status={statusList}
         owner={owner}
+        vis={vis}
+        hybrid={hybrid}
+        rerank={rerank}
         onCategoryChange={(c) => setCategory((c ?? '') as ArtifactCategory)}
         onTagsChange={(ts) => setTags(ts)}
         onStatusChange={(ss) => setStatusList(ss as Status[])}
         onOwnerChange={(o) => setOwner(o)}
+        onVisChange={(v) => setVis(v)}
+        onHybridChange={(b) => setHybrid(b)}
+        onRerankChange={(b) => setRerank(b)}
         onClearAll={clearAll}
       />
 
@@ -157,6 +179,9 @@ export function CatalogView() {
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
         artifacts={allArtifacts}
+        vis={vis}
+        hybrid={hybrid}
+        rerank={rerank}
         onSelect={handleSelect}
       />
     </div>
