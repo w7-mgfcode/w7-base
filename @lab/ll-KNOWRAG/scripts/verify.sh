@@ -7,8 +7,9 @@
 #   3. ingestion.seed_and_grow   — seed fixtures → Qdrant points grow
 #   4. search.api_returns_hits   — search returns ≥1 hit for seeded fixture
 #   5. ui_catalog.proxy_returns  — UI nginx proxy returns ≥4 artifacts via :3737
-#   6. related.api_returns_3_plus— /related returns ≥3 sibling artifacts
-#   7. mcp.search_returns_hits   — MCP rag_search_knowledge_base returns hits
+#   6. ui_chat.tab_loads         — UI ships the Chat tab bundle with empty-state copy
+#   7. related.api_returns_3_plus— /related returns ≥3 sibling artifacts
+#   8. mcp.search_returns_hits   — MCP rag_search_knowledge_base returns hits
 #
 # Run via:  bash scripts/verify.sh   (or)   w7 verify @lab/ll-KNOWRAG
 #
@@ -305,8 +306,10 @@ check_ui_catalog() {
   # Hits the UI's nginx proxy at :${UI_PORT}/api/artifacts. Asserts the proxy
   # is wired (regression guard for #46) and that the catalog has ≥4 artifacts
   # — the same floor used by check_ingestion (baseline + 3 related).
+  # Timeout: the API's Gitea-list+enrich path takes ~5s with the current KB
+  # size; 15s leaves enough headroom for a slow host.
   local count
-  count=$(curl -fsS --max-time 5 "${UI_URL}/api/artifacts" 2>>"${TRACE_LOG}" \
+  count=$(curl -fsS --max-time 15 "${UI_URL}/api/artifacts" 2>>"${TRACE_LOG}" \
     | jq '. | length' 2>/dev/null || echo 0)
   if [[ "${count:-0}" -lt 4 ]]; then
     CHECK_DETAIL="UI proxy returned ${count} artifacts via ${UI_URL} (need ≥4 — proxy may be broken)"
@@ -314,6 +317,35 @@ check_ui_catalog() {
   fi
   CHECK_DETAIL="UI proxy returned ${count} artifacts via ${UI_URL}"
   return 0
+}
+
+check_ui_chat_tab_loads() {
+  # Asserts the Chat tab (Epic 2 of #55) is reachable in the served bundle.
+  # The SPA shell at /?view=chat is the Vite-emitted index.html — its
+  # <script src="..."> points at the hashed JS bundle that contains the
+  # Chat view code. The empty-state copy ("Ask the knowledge base anything")
+  # is a JSX literal (no template expression), so esbuild keeps it as a
+  # string literal in the bundle. Grep there.
+  local shell
+  shell=$(curl -fsS --max-time 5 "${UI_URL}/?view=chat" 2>>"${TRACE_LOG}") || {
+    CHECK_DETAIL="UI not reachable at ${UI_URL}/?view=chat"
+    return 1
+  }
+  local bundle_path
+  bundle_path=$(grep -oE '<script[^>]+src="[^"]+\.js"' <<<"$shell" \
+    | sed -E 's/.*src="([^"]+)".*/\1/' | head -1)
+  if [[ -z "$bundle_path" ]]; then
+    CHECK_DETAIL="no <script src=*.js> found in SPA shell at ${UI_URL}/?view=chat"
+    return 1
+  fi
+  local bundle_url="${UI_URL}${bundle_path}"
+  if curl -fsS --max-time 5 "${bundle_url}" 2>>"${TRACE_LOG}" \
+       | grep -q 'Ask the knowledge base'; then
+    CHECK_DETAIL="Chat tab bundle ${bundle_path} contains empty-state copy"
+    return 0
+  fi
+  CHECK_DETAIL="Chat empty-state copy NOT found in ${bundle_path} (Chat view may be missing from build)"
+  return 1
 }
 
 check_related() {
@@ -385,6 +417,7 @@ run_check "gitea.kb_repo_exists"     check_gitea_kb_repo  critical || true
 run_check "ingestion.seed_and_grow"  check_ingestion      high     || true
 run_check "search.api_returns_hits"  check_search         high     || true
 run_check "ui_catalog.proxy_returns" check_ui_catalog     high     || true
+run_check "ui_chat.tab_loads"        check_ui_chat_tab_loads high  || true
 run_check "related.api_returns_3_plus" check_related      high     || true
 run_check "mcp.search_returns_hits"  check_mcp_search     medium   || true
 
