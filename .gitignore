@@ -85,3 +85,4 @@ w7.bak
 /.claude/credentials*
 /.claude/oauth*
 /.claude/.local*
+/.claude/scheduled_tasks.lock
