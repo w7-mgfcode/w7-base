@@ -83,7 +83,7 @@ mcp_call() {
   local body_file="/tmp/.mcp-body.$$"
   local init_rpc
   init_rpc='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"w7-verify","version":"1.0.0"}}}'
-  curl -sSL --post301 --post302 --post303 --max-time 15 -X POST "${MCP_URL}/mcp/" \
+  curl -sSL --post301 --post302 --post303 --max-time 30 -X POST "${MCP_URL}/mcp/" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -D "$hdr_file" -o "$body_file" \
@@ -106,7 +106,7 @@ mcp_call() {
   local rpc
   rpc=$(jq -nc --arg name "$tool_name" --argjson args "$args_json" \
     '{jsonrpc:"2.0", id:2, method:"tools/call", params:{name:$name, arguments:$args}}')
-  curl -sSL --post301 --post302 --post303 --max-time 15 -X POST "${MCP_URL}/mcp/" \
+  curl -sSL --post301 --post302 --post303 --max-time 30 -X POST "${MCP_URL}/mcp/" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -H "Mcp-Session-Id: ${session_id}" \
