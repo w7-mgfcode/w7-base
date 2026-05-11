@@ -9,6 +9,9 @@ interface SearchPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   artifacts: ArtifactSummary[]
+  vis: 'public' | 'private'
+  hybrid: boolean
+  rerank: boolean
   onSelect: (path: string) => void
 }
 

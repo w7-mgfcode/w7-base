@@ -15,10 +15,16 @@ interface FilterBarProps {
   tags: string[]
   status: Status[]
   owner: string | null
+  vis: 'public' | 'private'
+  hybrid: boolean
+  rerank: boolean
   onCategoryChange: (category: ArtifactCategory | null) => void
   onTagsChange: (tags: string[]) => void
   onStatusChange: (status: Status[]) => void
   onOwnerChange: (owner: string | null) => void
+  onVisChange: (vis: 'public' | 'private') => void
+  onHybridChange: (hybrid: boolean) => void
+  onRerankChange: (rerank: boolean) => void
   onClearAll: () => void
 }
 
