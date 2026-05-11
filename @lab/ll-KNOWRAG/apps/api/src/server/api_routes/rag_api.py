@@ -127,6 +127,24 @@ async def rag_query(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.NetworkError) as exc:
+        # Embedding step uses the same Ollama provider as chat; when the
+        # container is stopped, Docker DNS resolution fails before we ever
+        # reach chat.generate_text. Surface the same structured 503 the UI
+        # already understands so DegradedNotice fires uniformly.
+        logger.warning("embedding provider unreachable at %s: %s", chat.base_url, exc)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error_code": "chat_provider_unavailable",
+                "message": (
+                    f"Chat provider at {chat.base_url} is unreachable. "
+                    f"Set CHAT_BASE_URL/CHAT_MODEL or ensure Ollama is running. "
+                    f"See docs/runbook.md#configuring-rag-generation."
+                ),
+                "retrieved_context": [],
+            },
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=f"retrieval error: {exc}")
 

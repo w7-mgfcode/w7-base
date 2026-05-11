@@ -105,6 +105,24 @@ def test_rag_query_chat_provider_unavailable(fake_hits):
     assert detail["retrieved_context"][0]["artifact_path"] == "knowledge/auth.md"
 
 
+def test_rag_query_embedding_provider_unavailable():
+    coord, chat = _override_deps(
+        coord_query=httpx.ConnectError("name resolution failed"),
+        chat_generate="unused",
+    )
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/rag/query",
+            json={"query": "How do I auth?", "match_count": 5},
+        )
+    assert resp.status_code == 503
+    detail = resp.json()["detail"]
+    assert detail["error_code"] == "chat_provider_unavailable"
+    assert "ollama:11434" in detail["message"]
+    assert detail["retrieved_context"] == []
+    chat.generate_text.assert_not_awaited()
+
+
 def test_rag_query_chat_model_unavailable(fake_hits):
     request = httpx.Request("POST", "http://ollama:11434/api/generate")
     response = httpx.Response(404, text='{"error":"model not found"}', request=request)
