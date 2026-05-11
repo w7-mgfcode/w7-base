@@ -9,6 +9,9 @@ interface SearchPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   artifacts: ArtifactSummary[]
+  vis: 'public' | 'private'
+  hybrid: boolean
+  rerank: boolean
   onSelect: (path: string) => void
 }
 
@@ -16,6 +19,9 @@ export function SearchPalette({
   open,
   onOpenChange,
   artifacts,
+  vis,
+  hybrid,
+  rerank,
   onSelect,
 }: SearchPaletteProps) {
   const [input, setInput] = useState('')
@@ -30,6 +36,12 @@ export function SearchPalette({
   useEffect(() => {
     if (!open) setInput('')
   }, [open])
+
+  const activeModifiers = [
+    vis === 'private' ? 'private' : null,
+    hybrid ? 'hybrid' : null,
+    rerank ? 'rerank' : null,
+  ].filter((m): m is string => m !== null)
 
   const localMatches = useMemo(() => {
     if (!input.trim()) return artifacts.slice(0, 8)
@@ -49,7 +61,15 @@ export function SearchPalette({
       .slice(0, 12)
   }, [artifacts, input])
 
-  const semanticArgs = debounced ? { query: debounced, topK: 8 } : null
+  const semanticArgs = debounced
+    ? {
+        query: debounced,
+        topK: 8,
+        visibility: vis,
+        useHybrid: hybrid,
+        useRerank: rerank,
+      }
+    : null
   const semantic = useArtifactSearch(semanticArgs)
 
   const grouped = useMemo(() => groupByCategory(localMatches), [localMatches])
@@ -86,6 +106,14 @@ export function SearchPalette({
                 <span className="text-[10px] text-fg-subtle font-mono">…</span>
               )}
             </div>
+            {activeModifiers.length > 0 && (
+              <div
+                className="px-4 py-1 border-b border-hairline text-[10px] text-fg-muted font-mono"
+                aria-label="Active search scope"
+              >
+                Scope: {activeModifiers.join(' · ')}
+              </div>
+            )}
             <Command.List className="max-h-[60vh] overflow-y-auto py-2">
               <Command.Empty className="px-4 py-6 text-sm text-fg-muted">
                 No results.
