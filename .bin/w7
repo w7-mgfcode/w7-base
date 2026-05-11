@@ -693,11 +693,17 @@ EOF
             running=$(docker ps --filter "label=com.docker.compose.project=$proj_name_lower" --format "{{.Names}}" | wc -l)
             
             status_txt="Down"
+            color_open=""
+            color_close=""
             if [ "$running" -gt 0 ]; then
-               status_txt="\033[0;32mUp ($running)\033[0m"
+               status_txt="Up ($running)"
+               color_open="$GREEN"
+               color_close="$NC"
             fi
-            
-            printf "%-10s | %-20s | %-26s | %-20s\n" "$z" "$stack" "$status_txt" "-"
+
+            # %b interprets the \033 escapes in $color_open/$color_close; %-15s
+            # pads visible content to the same width as the STATUS header above.
+            printf "%-10s | %-20s | %b%-15s%b | %-20s\n" "$z" "$stack" "$color_open" "$status_txt" "$color_close" "-"
           fi
         done
       fi
