@@ -256,26 +256,53 @@ run_compose() {
 # from inside the stack dir, which defaults the project to the dir basename).
 # `run_compose down` only acts on $COMPOSE_PROJECT_NAME — without this sweep,
 # `w7 down` silently leaves those containers running.
+#
+# Overreach guards (in order):
+#   1. The `working_dir` label filter restricts discovery to containers whose
+#      compose project's working dir EXACTLY matches the stack we're stopping.
+#   2. We invoke `docker compose down` against the container's OWN
+#      `config_files` label (not a path we synthesize) — so we touch only the
+#      compose file that actually started those containers.
+#   3. We refuse to act if `config_files` somehow points outside `$stack_path`.
 down_orphan_projects() {
   local stack_path="$1"
-  local extra_projects
-  extra_projects=$(docker ps --all \
+  local rows
+  rows=$(docker ps --all \
     --filter "label=com.docker.compose.project.working_dir=$stack_path" \
-    --format '{{.Label "com.docker.compose.project"}}' | sort -u)
-  local proj
-  for proj in $extra_projects; do
-    if [[ -n "$proj" && "$proj" != "$COMPOSE_PROJECT_NAME" ]]; then
-      echo -e "${YELLOW}>>> Cleanup: stopping containers under non-W7 project '$proj' (working_dir=$stack_path)${NC}"
-      docker compose -p "$proj" -f "$stack_path/compose.yml" down
+    --format '{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.project.config_files"}}' \
+    | sort -u)
+  [[ -z "$rows" ]] && return
+  local proj cfg first_cfg
+  while IFS='|' read -r proj cfg; do
+    [[ -z "$proj" ]] && continue
+    [[ "$proj" == "$COMPOSE_PROJECT_NAME" ]] && continue
+    # `config_files` may be comma-separated when compose was invoked with
+    # multiple `-f` flags. We only need the primary file for `docker compose -f`.
+    first_cfg="${cfg%%,*}"
+    if [[ -z "$first_cfg" || "$first_cfg" != "$stack_path"/* ]]; then
+      log_warn "Skipping orphan project '$proj': config_files='$cfg' is not under $stack_path"
+      continue
     fi
-  done
+    echo -e "${YELLOW}>>> Cleanup: stopping containers under non-W7 project '$proj' (working_dir=$stack_path)${NC}"
+    docker compose -p "$proj" -f "$first_cfg" down
+  done <<< "$rows"
 }
 
 # w7_zone_from_workdir: derive @zone from a Compose working_dir label.
 # Compose always sets `com.docker.compose.project.working_dir` to the absolute
 # path of the directory containing compose.yml. For W7 stacks that path is
 # always under ${W7_ROOT}/<zone>/<stack>, so we can identify the zone without
-# trusting the operator-controlled project name. Returns "" if not under W7.
+# trusting the operator-controlled project name.
+#
+# Returns:
+#   "@ops" | "@dev" | "@prod" | "@lab"  — workdir is under a W7 zone
+#   ""                                  — workdir is empty (legacy/non-Compose
+#                                         container) OR present but outside
+#                                         W7_ROOT (foreign Compose project on
+#                                         the same host). Both cases are
+#                                         deliberately collapsed: the caller
+#                                         (`w7_zone_for`) falls back to the
+#                                         project-name prefix in either case.
 w7_zone_from_workdir() {
   local workdir="$1"
   [[ -z "$workdir" ]] && { echo ""; return; }
@@ -288,6 +315,28 @@ w7_zone_from_workdir() {
   esac
 }
 
+# w7_zone_for: single source of truth for container → zone mapping. Prefers
+# the workdir label (unforgeable, set by Compose) and falls back to a prefix
+# match on the project name for legacy `docker run` / non-Compose containers.
+# Returns "[ORPHAN]" when neither signal yields a W7 zone.
+w7_zone_for() {
+  local project="$1" workdir="$2"
+  local z; z=$(w7_zone_from_workdir "$workdir")
+  if [[ -n "$z" ]]; then echo "$z"; return; fi
+  case "$project" in
+    ops-*)  echo "@ops"  ;;
+    dev-*)  echo "@dev"  ;;
+    prod-*) echo "@prod" ;;
+    lab-*)  echo "@lab"  ;;
+    *)      echo "[ORPHAN]" ;;
+  esac
+}
+
+# Single source of truth for the per-container `docker ps` format used by the
+# top/net/json renderers. Adding or removing a field here requires updating
+# the matching `IFS='|' read -r ...` line in each renderer.
+W7_PS_FMT='{{.ID}}|{{.Names}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}|{{.Status}}|{{.Label "w7.visibility.hide"}}|{{.Label "w7.platform.managed"}}|{{.Ports}}|{{.Label "com.docker.compose.project.working_dir"}}'
+
 # --- Runtime Resource Visibility Implementation ---
 
 render_top_table() {
@@ -296,7 +345,7 @@ render_top_table() {
     gpu_total_load=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo "-")
   fi
 
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
+  local containers=$(docker ps --all --format "$W7_PS_FMT")
   local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
 
   to_mb() {
@@ -310,23 +359,12 @@ render_top_table() {
     else echo "0"; fi
   }
 
-  get_zone() {
-    local p="$1"; local workdir="$2"
-    local z; z=$(w7_zone_from_workdir "$workdir")
-    if [[ -n "$z" ]]; then echo "$z"; return; fi
-    if [[ "$p" == ops-* ]]; then echo "@ops";
-    elif [[ "$p" == dev-* ]]; then echo "@dev";
-    elif [[ "$p" == prod-* ]]; then echo "@prod";
-    elif [[ "$p" == lab-* ]]; then echo "@lab";
-    else echo "[ORPHAN]"; fi
-  }
-
   declare -A zone_cpu zone_mem zone_gpu zone_count zone_svcs
   local g_cpu=0; local g_mem=0; local g_gpu=0; local g_count=0
 
-  while IFS='|' read -r id name project service status hide managed workdir; do
+  while IFS='|' read -r id name project service status hide managed _ports workdir; do
     if [[ "$hide" == "true" ]]; then continue; fi
-    local zone=$(get_zone "$project" "$workdir")
+    local zone=$(w7_zone_for "$project" "$workdir")
     local stat_line=$(echo "$stats" | grep "^$id" || true)
     
     local cpu=0; local mem=0; local net="-"
@@ -396,23 +434,12 @@ render_top_table() {
   }
 
   render_net_table() {
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Ports}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
-
-  get_zone() {
-  local p="$1"; local workdir="$2"
-  local z; z=$(w7_zone_from_workdir "$workdir")
-  if [[ -n "$z" ]]; then echo "$z"; return; fi
-  if [[ "$p" == ops-* ]]; then echo "@ops";
-  elif [[ "$p" == dev-* ]]; then echo "@dev";
-  elif [[ "$p" == prod-* ]]; then echo "@prod";
-  elif [[ "$p" == lab-* ]]; then echo "@lab";
-  else echo "[ORPHAN]"; fi
-  }
+  local containers=$(docker ps --all --format "$W7_PS_FMT")
 
   declare -A zone_net
-  while IFS='|' read -r id name project service ports hide workdir; do
+  while IFS='|' read -r id name project service _status hide _managed ports workdir; do
   if [[ "$hide" == "true" ]]; then continue; fi
-  local zone=$(get_zone "$project" "$workdir")
+  local zone=$(w7_zone_for "$project" "$workdir")
   local display_svc="${service:-$name}"
 
   # Process ports: "0.0.0.0:80->80/tcp, :::80->80/tcp" -> "80:80"
@@ -456,19 +483,8 @@ render_top_table() {
   gpu_total_load=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo "-")
   fi
 
-  get_zone() {
-  local p="$1"; local workdir="$2"
-  local z; z=$(w7_zone_from_workdir "$workdir")
-  if [[ -n "$z" ]]; then echo "$z"; return; fi
-  if [[ "$p" == ops-* ]]; then echo "@ops";
-  elif [[ "$p" == dev-* ]]; then echo "@dev";
-  elif [[ "$p" == prod-* ]]; then echo "@prod";
-  elif [[ "$p" == lab-* ]]; then echo "@lab";
-  else echo "[ORPHAN]"; fi
-  }
-
   echo "["
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Ports}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
+  local containers=$(docker ps --all --format "$W7_PS_FMT")
   local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
 
   local first=1
@@ -476,7 +492,7 @@ render_top_table() {
   if [[ $first -eq 0 ]]; then echo ","; fi
   first=0
 
-  local zone=$(get_zone "$project" "$workdir")
+  local zone=$(w7_zone_for "$project" "$workdir")
   local stat_line=$(echo "$stats" | grep "^$id" || true)
   local cpu="0%"; local mem="0B"; local net="0B/0B"
   if [[ -n "$stat_line" ]]; then
