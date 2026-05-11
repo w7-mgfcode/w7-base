@@ -31,10 +31,14 @@ docker compose --profile webui up -d
 ```
 
 ### 3. Initialize Models
-Pull the required embedding model (one-time):
+Pull the required models (one-time):
 ```bash
 # For embeddings
 docker exec -it knowrag-ollama ollama pull nomic-embed-text
+# For RAG generation (POST /api/rag/query). The .env.example default is
+# llama3.2:1b — until this is pulled, /api/rag/query returns a structured
+# 503 (error_code: chat_model_unavailable). See § Configuring RAG generation.
+docker exec -it knowrag-ollama ollama pull llama3.2:1b
 # For contextual embeddings (only if USE_CONTEXTUAL_EMBEDDINGS=true)
 docker exec -it knowrag-ollama ollama pull llama3
 ```
@@ -107,9 +111,9 @@ curl -sS -X POST http://localhost:8181/api/rag/query \
 
 Use `w7 verify` to prove the deployed stack actually delivers the Phase 8 contract — not just that containers came up.
 
-> **Current live-stack baseline: 6/6 pass** (`dogfood-output/20260506T224023Z/`). Full Phase 8 contract verified end-to-end: api healthy, KB repo reachable, 4 fixtures committed → 10 Qdrant chunks in 3.3s, search returns 10 hits, `/related` returns 3 siblings, MCP `rag_search_knowledge_base` responds. Total run: ~4s.
+> **Current live-stack baseline: 8/8 pass.** Full Phase 8 contract verified end-to-end: api healthy, KB repo reachable, 4 fixtures committed → Qdrant chunks grow, search returns hits, UI nginx proxy returns artifacts, the Chat tab bundle ships the empty-state copy, `/related` returns siblings, MCP `rag_search_knowledge_base` responds.
 
-The harness runs six checks in order against a live, running stack:
+The harness runs eight checks in order against a live, running stack:
 
 | # | Check | Asserts |
 |---|---|---|
@@ -117,8 +121,10 @@ The harness runs six checks in order against a live, running stack:
 | 2 | `gitea.kb_repo_exists` | KB repo is reachable via the Gitea API |
 | 3 | `ingestion.seed_and_grow` | Four fixtures committed to a temp branch grow Qdrant `points_count` within 60s |
 | 4 | `search.api_returns_hits` | `POST /api/artifacts/search` returns ≥1 hit for the seeded baseline |
-| 5 | `related.api_returns_3_plus` | `GET /api/artifacts/.../related?k=5` returns ≥3 sibling artifacts |
-| 6 | `mcp.search_returns_hits` | MCP `rag_search_knowledge_base` tool returns content over the FastMCP HTTP transport |
+| 5 | `ui_catalog.proxy_returns` | UI nginx proxy `/api/artifacts` returns ≥4 artifacts (regression guard for #46) |
+| 6 | `ui_chat.tab_loads` | Vite-emitted JS bundle for `?view=chat` contains the Chat empty-state copy (regression guard for the Epic 2 build pipeline) |
+| 7 | `related.api_returns_3_plus` | `GET /api/artifacts/.../related?k=5` returns ≥3 sibling artifacts |
+| 8 | `mcp.search_returns_hits` | MCP `rag_search_knowledge_base` tool returns content over the FastMCP HTTP transport |
 
 ### Run modes
 
