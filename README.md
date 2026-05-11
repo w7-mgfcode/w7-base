@@ -7,7 +7,7 @@
 [![CLI](https://img.shields.io/badge/CLI-bash-4EAA25?logo=gnubash)]()
 [![GitOps](https://img.shields.io/badge/gitops-Gitea%20%2B%20Webhook-609926?logo=gitea)]()
 [![Secrets](https://img.shields.io/badge/secrets-SOPS%20%2B%20AGE-blue)]()
-[![Status](https://img.shields.io/badge/baseline-Phase%207%20sealed-success)]()
+[![Status](https://img.shields.io/badge/baseline-Phase%208%20verified-success)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![CI](https://github.com/w7-mgfcode/w7-base/actions/workflows/ci.yaml/badge.svg)](https://github.com/w7-mgfcode/w7-base/actions/workflows/ci.yaml)
 
@@ -36,10 +36,10 @@ W7-Base is a **directory-driven monorepo** that standardizes Docker Compose depl
 | **Platform baseline** (zones, CLI, GitOps, secrets, observability) | ✅ **Sealed at Slice 21** | All 23 documentation slices verified |
 | **`@ops` services** (9 stacks) | ✅ Operational | Gitea, Traefik, Webhook, Prometheus, Grafana, Node Exporter, W7 Exporter, Dozzle, Act-Runner |
 | **`@dev/anythingllm`** (LLM workspace) | ✅ Deployed | Postgres + Qdrant + Gemini, SOPS-encrypted secrets |
-| **`@lab/ll-KNOWRAG`** (KB/RAG sub-project) | 🔄 Phase 7 sealed → Phase 8 pivot in-flight | See [§ KNOWRAG](#-knowrag--knowledge-base--rag-sub-project) |
+| **`@lab/ll-KNOWRAG`** (KB/RAG sub-project) | ✅ Phase 8 verified — pre-release | UI epics 1–5 of #55 merged; `knowrag-v*` tag cut pending. See [§ KNOWRAG](#-knowrag--knowledge-base--rag-sub-project) |
 | **`@prod/whoami`** | ✅ Validation workload | Pre-prod gate verified |
 
-> 📍 **Active focus:** `@lab/ll-KNOWRAG` is mid-pivot from Supabase/PostgREST to **Gitea + Qdrant** as the storage backend. Phase 7 (UI/Backend parity, recursive crawling, reranking) is sealed; Phase 8 (re-architecture) is the next planned slice.
+> 📍 **Active focus:** KNOWRAG Phase 8 backend (Gitea + Qdrant + Ollama) and the UI epics under umbrella #55 are verified and merged. `w7 verify @lab/ll-KNOWRAG` is 8/8 green. The next slice is the release-engineering pass — cutting `knowrag-v0.x.0` per `RELEASE.md`.
 
 ---
 
@@ -238,7 +238,7 @@ Static checks under `.shared/policy/` run during `w7 doctor`:
 
 ## 🧪 KNOWRAG — Knowledge Base & RAG sub-project
 
-`@lab/ll-KNOWRAG` is an in-flight local-first KB+RAG system extracted from [Archon](https://github.com/coleam00/archon). It ingests websites/documents, chunks and embeds content, and exposes retrieval via FastAPI, FastMCP, and a React UI.
+`@lab/ll-KNOWRAG` is a local-first KB+RAG system extracted from [Archon](https://github.com/coleam00/archon). It ingests websites/documents, chunks and embeds content, and exposes retrieval via FastAPI, FastMCP, and a React UI.
 
 **Phase 7 (sealed):**
 - ✅ Recursive crawling with depth limits
@@ -248,14 +248,15 @@ Static checks under `.shared/policy/` run during `w7 doctor`:
 - ✅ UI overhaul with backend parity
 - ✅ 6 dogfood-found UI/API issues fixed
 
-**Phase 8 (planned — re-architecture pivot):**
-- 🔴 Replace Supabase/PostgREST with **Gitea + Qdrant** (Git as artifact source-of-truth, Qdrant for semantic search)
-- 🔴 Markdown frontmatter parser (tags, status, version, owner)
-- 🔴 Git-webhook-driven Qdrant ingestion pipeline
-- 🔴 Tailwind-based card-grid catalog UI
-- 🔴 Open WebUI + MCP integration
+**Phase 8 (verified — pre-release):**
+- ✅ Storage pivot: Supabase/PostgREST → **Gitea + Qdrant** (Git as artifact source-of-truth, Qdrant for semantic search)
+- ✅ Markdown frontmatter parser (tags, status, version, owner, visibility)
+- ✅ Git-webhook-driven Qdrant ingestion pipeline (HMAC-verified)
+- ✅ Tailwind v4 + Radix UI design system (`.stitch/DESIGN.md`)
+- ✅ UI umbrella #55 — Epics 1–5: app shell, chat (RAG-Q&A), operator panel, catalog scope filters, UI smoke + dogfood release-readiness
+- ✅ `w7 verify @lab/ll-KNOWRAG` 8/8 green (api.health → gitea → ingestion → search → /related → MCP → UI catalog → UI chat)
 
-See `@lab/ll-KNOWRAG/.omg/state/taskboard.md` for the full Phase 8 task plan.
+Next slice: cut `knowrag-v0.x.0` per [`RELEASE.md`](RELEASE.md). See `@lab/ll-KNOWRAG/.omg/state/taskboard.md` for the full Phase 8 task plan.
 
 ---
 
@@ -295,6 +296,8 @@ See `@lab/ll-KNOWRAG/.omg/state/taskboard.md` for the full Phase 8 task plan.
 **Operator-facing:**
 - [README.md](README.md) — this file
 - [AGENTS.md](AGENTS.md) — agent/AI assistant guidance
+- [BRANCHING.md](BRANCHING.md) — branching strategy + branch-naming grammar
+- [RELEASE.md](RELEASE.md) — release cadence + per-train tag-cut procedure
 - [llms.txt](llms.txt) — LLM discovery file
 
 **Platform docs (`docs/`):**
@@ -356,7 +359,8 @@ The `@ops/webhook` and `@ops/act-runner` containers mount `/var/run/docker.sock`
 | Policy enforcement (privileged, root-mount, naming) | ✅ Implemented |
 | Backup retention + restore | ✅ Implemented |
 | Interactive `@prod` approvals | ✅ Implemented |
-| KNOWRAG Phase 8 — Gitea+Qdrant pivot | 🔴 Planned (next slice) |
+| KNOWRAG Phase 8 — Gitea+Qdrant pivot | ✅ Verified (pre-release) |
+| KNOWRAG `knowrag-v0.x.0` tag cut | 📋 Planned (next slice) |
 | Webhook audit logging | 📋 Planned |
 
 ---

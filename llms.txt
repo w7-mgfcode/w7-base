@@ -13,6 +13,8 @@ W7-Base standardizes local infrastructure management through a directory-based z
 ## Operator-facing
 - [README.md](README.md): Main operator overview and installation guide.
 - [AGENTS.md](AGENTS.md): Agent and AI-assistant guidance for this monorepo.
+- [BRANCHING.md](BRANCHING.md): Branching strategy and branch-naming grammar.
+- [RELEASE.md](RELEASE.md): Release cadence and per-train tag-cut procedure.
 
 ## Platform Documentation
 - [docs/README-LLM.md](docs/README-LLM.md): Concise, LLM-optimized technical usage guide.
