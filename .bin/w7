@@ -251,6 +251,43 @@ run_compose() {
   docker compose "${compose_args[@]}" "$@"
 }
 
+# down_orphan_projects: stop containers belonging to this stack's compose.yml
+# that were started under a non-W7 project name (e.g. via `docker compose up`
+# from inside the stack dir, which defaults the project to the dir basename).
+# `run_compose down` only acts on $COMPOSE_PROJECT_NAME — without this sweep,
+# `w7 down` silently leaves those containers running.
+down_orphan_projects() {
+  local stack_path="$1"
+  local extra_projects
+  extra_projects=$(docker ps --all \
+    --filter "label=com.docker.compose.project.working_dir=$stack_path" \
+    --format '{{.Label "com.docker.compose.project"}}' | sort -u)
+  local proj
+  for proj in $extra_projects; do
+    if [[ -n "$proj" && "$proj" != "$COMPOSE_PROJECT_NAME" ]]; then
+      echo -e "${YELLOW}>>> Cleanup: stopping containers under non-W7 project '$proj' (working_dir=$stack_path)${NC}"
+      docker compose -p "$proj" -f "$stack_path/compose.yml" down
+    fi
+  done
+}
+
+# w7_zone_from_workdir: derive @zone from a Compose working_dir label.
+# Compose always sets `com.docker.compose.project.working_dir` to the absolute
+# path of the directory containing compose.yml. For W7 stacks that path is
+# always under ${W7_ROOT}/<zone>/<stack>, so we can identify the zone without
+# trusting the operator-controlled project name. Returns "" if not under W7.
+w7_zone_from_workdir() {
+  local workdir="$1"
+  [[ -z "$workdir" ]] && { echo ""; return; }
+  case "$workdir" in
+    "${W7_ROOT}/@ops/"*)  echo "@ops"  ;;
+    "${W7_ROOT}/@dev/"*)  echo "@dev"  ;;
+    "${W7_ROOT}/@prod/"*) echo "@prod" ;;
+    "${W7_ROOT}/@lab/"*)  echo "@lab"  ;;
+    *) echo "" ;;
+  esac
+}
+
 # --- Runtime Resource Visibility Implementation ---
 
 render_top_table() {
@@ -259,7 +296,7 @@ render_top_table() {
     gpu_total_load=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo "-")
   fi
 
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}")
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
   local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
 
   to_mb() {
@@ -274,7 +311,9 @@ render_top_table() {
   }
 
   get_zone() {
-    local p="$1"
+    local p="$1"; local workdir="$2"
+    local z; z=$(w7_zone_from_workdir "$workdir")
+    if [[ -n "$z" ]]; then echo "$z"; return; fi
     if [[ "$p" == ops-* ]]; then echo "@ops";
     elif [[ "$p" == dev-* ]]; then echo "@dev";
     elif [[ "$p" == prod-* ]]; then echo "@prod";
@@ -285,9 +324,9 @@ render_top_table() {
   declare -A zone_cpu zone_mem zone_gpu zone_count zone_svcs
   local g_cpu=0; local g_mem=0; local g_gpu=0; local g_count=0
 
-  while IFS='|' read -r id name project service status hide managed; do
+  while IFS='|' read -r id name project service status hide managed workdir; do
     if [[ "$hide" == "true" ]]; then continue; fi
-    local zone=$(get_zone "$project")
+    local zone=$(get_zone "$project" "$workdir")
     local stat_line=$(echo "$stats" | grep "^$id" || true)
     
     local cpu=0; local mem=0; local net="-"
@@ -357,10 +396,12 @@ render_top_table() {
   }
 
   render_net_table() {
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Ports}}|{{.Label \"w7.visibility.hide\"}}")
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Ports}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
 
   get_zone() {
-  local p="$1"
+  local p="$1"; local workdir="$2"
+  local z; z=$(w7_zone_from_workdir "$workdir")
+  if [[ -n "$z" ]]; then echo "$z"; return; fi
   if [[ "$p" == ops-* ]]; then echo "@ops";
   elif [[ "$p" == dev-* ]]; then echo "@dev";
   elif [[ "$p" == prod-* ]]; then echo "@prod";
@@ -369,9 +410,9 @@ render_top_table() {
   }
 
   declare -A zone_net
-  while IFS='|' read -r id name project service ports hide; do
+  while IFS='|' read -r id name project service ports hide workdir; do
   if [[ "$hide" == "true" ]]; then continue; fi
-  local zone=$(get_zone "$project")
+  local zone=$(get_zone "$project" "$workdir")
   local display_svc="${service:-$name}"
 
   # Process ports: "0.0.0.0:80->80/tcp, :::80->80/tcp" -> "80:80"
@@ -416,7 +457,9 @@ render_top_table() {
   fi
 
   get_zone() {
-  local p="$1"
+  local p="$1"; local workdir="$2"
+  local z; z=$(w7_zone_from_workdir "$workdir")
+  if [[ -n "$z" ]]; then echo "$z"; return; fi
   if [[ "$p" == ops-* ]]; then echo "@ops";
   elif [[ "$p" == dev-* ]]; then echo "@dev";
   elif [[ "$p" == prod-* ]]; then echo "@prod";
@@ -425,15 +468,15 @@ render_top_table() {
   }
 
   echo "["
-  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Ports}}")
+  local containers=$(docker ps --all --format "{{.ID}}|{{.Names}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}|{{.Status}}|{{.Label \"w7.visibility.hide\"}}|{{.Label \"w7.platform.managed\"}}|{{.Ports}}|{{.Label \"com.docker.compose.project.working_dir\"}}")
   local stats=$(docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}")
 
   local first=1
-  while IFS='|' read -r id name project service status hide managed ports; do
+  while IFS='|' read -r id name project service status hide managed ports workdir; do
   if [[ $first -eq 0 ]]; then echo ","; fi
   first=0
 
-  local zone=$(get_zone "$project")
+  local zone=$(get_zone "$project" "$workdir")
   local stat_line=$(echo "$stats" | grep "^$id" || true)
   local cpu="0%"; local mem="0B"; local net="0B/0B"
   if [[ -n "$stat_line" ]]; then
@@ -651,6 +694,7 @@ EOF
           spath=$(resolve_stack "$s")
           setup_env "$spath"
           run_compose down
+          down_orphan_projects "$spath"
         )
       done
     else
@@ -658,6 +702,7 @@ EOF
       setup_env "$SPATH"
       echo -e "${GREEN}Stopping stack: ${COMPOSE_PROJECT_NAME}${NC}"
       run_compose down
+      down_orphan_projects "$SPATH"
     fi
     ;;
   logs)
@@ -686,11 +731,14 @@ EOF
         for stack_path in "$W7_ROOT/$z"/*; do
           if [ -f "$stack_path/.w7-meta" ]; then
             stack=$(basename "$stack_path")
-            proj_name="${zone_clean}-${stack}"
-            proj_name_lower=$(echo "$proj_name" | tr '[:upper:]' '[:lower:]')
-            
-            # Get running container count for the project
-            running=$(docker ps --filter "label=com.docker.compose.project=$proj_name_lower" --format "{{.Names}}" | wc -l)
+
+            # Identify running containers by their compose working_dir label —
+            # robust whether the operator started via `w7 up` (project name
+            # derived from <zone>-<stack>) or `docker compose up` directly
+            # (project name defaults to the directory basename).
+            running=$(docker ps \
+              --filter "label=com.docker.compose.project.working_dir=$stack_path" \
+              --format "{{.Names}}" | wc -l)
             
             status_txt="Down"
             color_open=""
