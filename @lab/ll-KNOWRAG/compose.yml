@@ -160,7 +160,7 @@ services:
     image: knowrag-ui:latest
     container_name: knowrag-ui
     ports:
-      - "${UI_PORT:-3737}:80"
+      - "${UI_PORT:-3737}:8080"
     depends_on:
       knowrag-api:
         condition: service_healthy
