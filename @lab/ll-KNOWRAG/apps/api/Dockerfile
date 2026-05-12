@@ -15,9 +15,14 @@ RUN playwright install --with-deps chromium || echo "Playwright install skipped 
 
 COPY src/ ./src/
 
+RUN useradd --create-home --uid 10001 --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
+
 ENV PYTHONPATH=/app/src
 ENV API_PORT=8181
 
 EXPOSE 8181
+
+USER appuser
 
 CMD ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8181"]
