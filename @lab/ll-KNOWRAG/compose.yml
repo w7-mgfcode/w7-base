@@ -33,6 +33,13 @@ services:
     restart: unless-stopped
     networks:
       - knowrag-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   qdrant:
     image: qdrant/qdrant:v1.12.5
