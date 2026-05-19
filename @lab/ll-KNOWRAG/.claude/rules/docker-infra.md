@@ -60,7 +60,7 @@ docker compose --env-file .env.example config -q
 All images are version-pinned. **Never** introduce a `:latest` tag. When bumping versions, do it deliberately in a `chore(deps): bump <image> to <version>` commit and validate locally.
 
 Current pins:
-- `ollama/ollama:0.5.4`
+- `ollama/ollama:0.30.0-rc20`
 - `qdrant/qdrant:v1.12.5`
 - `gitea/gitea:1.22.4`
 - `ghcr.io/open-webui/open-webui:v0.4.8`
