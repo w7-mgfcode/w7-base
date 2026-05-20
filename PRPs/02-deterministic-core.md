@@ -101,12 +101,13 @@ export interface Card {
   rank: Rank;
 }
 
-export type TurnPhase =
-  | "WaitingForAttack"
-  | "WaitingForDefense"
-  | "ResolvingDefense"
-  | "RoundOver"
-  | "MatchOver";
+export type TurnState =
+  | "Dealing"
+  | "AwaitingAttack"
+  | "AwaitingDefense"
+  | "Resolving"
+  | "RoundEnded"
+  | "MatchEnded";
 
 export type ValidationError = {
   code: string;        // machine-readable, e.g. "ATTACK_INVALID_COMBO"
@@ -160,7 +161,7 @@ Define in `src/core/types.ts`:
 - `Deck` — typed as `Card[]` with helper accessors `peekBottom`, `drawTop`
 - `PendingAttack` — `{attackerId, defenderId, unbeatenCards: Card[], beatenPairs: {attack: Card; counter: Card}[]}`
 - `DiscardPile` — `Card[]` (face-down; rendered as count for clients)
-- `RoundState` — `{trump: Suit, dealerId: string, attackerId: string, defenderId: string | null, phase: TurnPhase, pendingAttack: PendingAttack | null}`
+- `RoundState` — `{trump: Suit, dealerId: string, attackerId: string, defenderId: string | null, phase: TurnState, pendingAttack: PendingAttack | null}`
 - `MatchState` — `{matchId, roundNumber, players: Player[], deck: Card[], discard: Card[], round: RoundState, winner: string | null}`
 - `Action` — discriminated union of attack/beat/stop submissions
 - `GameEvent` — discriminated union: `RoundStarted | TrumpSelected | CardsDealt | AttackSubmitted | CardBeaten | DefenseStopped | FullDefense | CardsDrawn | TurnChanged | RoundWon | MatchEnded`
@@ -191,7 +192,7 @@ else                     → return (counter.suit === attack.suit && counter.ran
 
 // submitAttack(state, playerId, cardIds)
 // PATTERN: validate → mutate-immutably → emit events → advance phase
-require state.round.phase === WaitingForAttack
+require state.round.phase === AwaitingAttack
 require state.round.attackerId === playerId
 let cards = cardIds.map(id => find in attacker.hand)
 validateAttack(cards, attacker.hand) → propagate error
@@ -200,15 +201,15 @@ state.round.pendingAttack = { attackerId, defenderId: leftOf(attackerId), unbeat
 {hand, deck} = drawToMinimum(attacker.hand, state.deck, 5)
 attacker.hand = hand
 state.deck = deck
-if checkWin(state, attackerId) → emit RoundWon → phase = RoundOver → return ok
+if checkWin(state, attackerId) → emit RoundWon → phase = RoundEnded → return ok
 emit AttackSubmitted
-state.round.phase = WaitingForDefense
+state.round.phase = AwaitingDefense
 state.round.defenderId = pendingAttack.defenderId
 emit TurnChanged
 return ok
 
 // stopDefending(state, defenderId)
-require state.round.phase in {WaitingForDefense, ResolvingDefense}
+require state.round.phase in {AwaitingDefense, Resolving}
 require defenderId === state.round.defenderId
 let pa = state.round.pendingAttack
 if pa.unbeatenCards.length === 0:
@@ -218,7 +219,7 @@ if pa.unbeatenCards.length === 0:
     state.round.attackerId = defenderId       // counterattack
     state.round.defenderId = null
     state.round.pendingAttack = null
-    state.round.phase = WaitingForAttack
+    state.round.phase = AwaitingAttack
     emit FullDefense, CardsDrawn, TurnChanged
 else:
     // PARTIAL / NO DEFENCE
@@ -227,7 +228,7 @@ else:
     state.round.attackerId = leftOf(defenderId)
     state.round.defenderId = null
     state.round.pendingAttack = null
-    state.round.phase = WaitingForAttack
+    state.round.phase = AwaitingAttack
     emit DefenseStopped, CardsDrawn, TurnChanged
 
 // drawToMinimum(hand, deck, target = 5)
@@ -273,7 +274,7 @@ Group under `src/core/__tests__/`:
 - Non-trump vs trump → false
 
 **Turn flow**
-- Attacker sends 3-card, refills to 5, phase = WaitingForDefense
+- Attacker sends 3-card, refills to 5, phase = AwaitingDefense
 - Defender beats one of three cards, stops → 2 cards added to hand, refills to 5+, next clockwise player becomes Attacker
 - Defender beats all (full defence) → discards all, refills to 5, becomes Attacker, must send next attack
 - Deck exhaustion: drawToMinimum stops, hand may end below 5
@@ -288,8 +289,8 @@ Group under `src/core/__tests__/`:
 - Game eventually progresses under random legal actions (no infinite loops with deck ≤ N)
 
 **Integration**
-- Complete 3-player round runs to RoundOver under scripted actions
-- Complete 4-player round runs to RoundOver under scripted actions
+- Complete 3-player round runs to RoundEnded under scripted actions
+- Complete 4-player round runs to RoundEnded under scripted actions
 - Full defence → counterattack → wraps correctly
 - Reconnection snapshot: `createPrivateView(state, viewerId)` is sufficient to resume
 
@@ -316,7 +317,7 @@ Every test described above must pass. Property-based tests run with at least 200
 ```bash
 # A 1000-game random-legal-bot simulation must complete in <30s and report:
 # - 0 invariant violations
-# - 100% of games reach RoundOver
+# - 100% of games reach RoundEnded
 # - Mean turns per round within plausible bounds (sanity, not balance)
 npx tsx scripts/sim-smoke.ts
 ```
