@@ -22,6 +22,7 @@ type(scope): description (#issue)
 | `ui` | KNOWRAG `apps/ui/` |
 | `mcp` | KNOWRAG `apps/mcp/` |
 | `ingest` | KNOWRAG ingestion pipeline (crawling/embedding/chunking) |
+| `reliquary` | Anything under `@lab/ll-RELIQUARY/` (browser-based collectable artifact game) |
 | `repo` | Repo-wide hygiene (gitignore, scaffolding, untracked-path triage) |
 | `platform` | `.bin/`, `.shared/`, top-level CLI |
 | `stacks` | Anything under `@ops/`, `@dev/`, `@prod/` (any single zone-stack) |
