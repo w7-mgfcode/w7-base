@@ -1,0 +1,125 @@
+# ll-RELIQUARY — boilerplate topology
+#
+# Browser-based collectable card/artifact game.
+# Source-of-truth for game state: Postgres.
+# Hot path / sessions / leaderboards: Redis.
+# UI: React + Vite + Tailwind v4 + Radix + PixiJS, served by nginx in prod.
+#
+# Start order (gated by healthchecks):
+#   reliquary-db, reliquary-cache  (parallel)
+#     ↓
+#   reliquary-api                  (waits for db + cache healthy)
+#     ↓
+#   reliquary-ui                   (waits for api healthy)
+#
+# Image pins follow .claude/rules/docker-infra.md — never :latest.
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────
+
+  reliquary-db:
+    image: postgres:16.6-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-lab-ll-reliquary}-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      - POSTGRES_DB=${POSTGRES_DB:-reliquary}
+    ports:
+      - "${DB_PORT:-5454}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - reliquary-net
+
+  reliquary-cache:
+    image: redis:7.4.1-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-lab-ll-reliquary}-cache
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+      - --save
+      - "60"
+      - "1"
+    ports:
+      - "${CACHE_PORT:-6464}:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - reliquary-net
+
+  # ── Application ─────────────────────────────────────────────
+
+  reliquary-api:
+    build: ./apps/api
+    image: reliquary-api:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-lab-ll-reliquary}-api
+    command:
+      - uvicorn
+      - server.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8282"
+      - --log-level
+      - "${LOG_LEVEL:-info}"
+    ports:
+      - "${API_PORT:-8282}:8282"
+    environment:
+      - API_PORT=${API_PORT:-8282}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - API_SESSION_SECRET=${API_SESSION_SECRET:?API_SESSION_SECRET required}
+      - API_CORS_ORIGINS=${API_CORS_ORIGINS:-http://localhost:4242}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@reliquary-db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@reliquary-cache:6379/0
+    depends_on:
+      reliquary-db:
+        condition: service_healthy
+      reliquary-cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8282/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - reliquary-net
+
+  reliquary-ui:
+    build:
+      context: ./apps/ui
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8282}
+        VITE_GAME_TITLE: ${VITE_GAME_TITLE:-Reliquary}
+    image: reliquary-ui:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-lab-ll-reliquary}-ui
+    ports:
+      - "${UI_PORT:-4242}:8080"
+    depends_on:
+      reliquary-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - reliquary-net
+
+networks:
+  reliquary-net:
+    driver: bridge

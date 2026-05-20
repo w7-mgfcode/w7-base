@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RELIQUARY | Your Shelf is Empty</title>
+<!-- Fonts: Cormorant Garamond for the museum feel, Space Mono for archival labels, Inter for body -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&amp;family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Inter:ital,wght@0,400;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "surface-container-lowest": "#120e04",
+                "surface-container-low": "#1f1b0f",
+                "secondary-fixed-dim": "#e3c28b",
+                "surface-container-high": "#2e2a1c",
+                "tertiary-fixed-dim": "#afc6ff",
+                "surface-bright": "#3e392a",
+                "tertiary-fixed": "#d9e2ff",
+                "surface-container": "#241f12",
+                "on-surface": "#ebe2cd",
+                "on-error": "#690005",
+                "on-secondary": "#412d04",
+                "on-primary-container": "#4c3700",
+                "surface": "#171307",
+                "outline": "#9a8f7d",
+                "primary": "#edc15a",
+                "on-tertiary-fixed": "#001943",
+                "tertiary": "#afc6ff",
+                "background": "#0b0a08", // Custom Background from prompt
+                "on-primary-fixed-variant": "#5b4300",
+                "on-tertiary": "#012d6c",
+                "on-secondary-fixed-variant": "#5a4318",
+                "outline-variant": "#4e4636",
+                "on-surface-variant": "#d1c5b1",
+                "on-tertiary-fixed-variant": "#234583",
+                "on-secondary-fixed": "#271900",
+                "error-container": "#93000a",
+                "primary-fixed-dim": "#edc15a",
+                "on-primary-fixed": "#251a00",
+                "inverse-primary": "#785a00",
+                "on-primary": "#3f2e00",
+                "surface-dim": "#171307",
+                "on-background": "#ebe2cd",
+                "secondary-container": "#5a4318",
+                "on-secondary-container": "#d1b07b",
+                "surface-tint": "#edc15a",
+                "surface-variant": "#3a3426",
+                "inverse-on-surface": "#353022",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed": "#ffdeaa",
+                "surface-container-highest": "#3a3426",
+                "error": "#ffb4ab",
+                "on-tertiary-container": "#143876",
+                "inverse-surface": "#ebe2cd",
+                "primary-fixed": "#ffdf9c",
+                "secondary": "#e3c28b",
+                "tertiary-container": "#86a4e9",
+                "primary-container": "#c89f3c"
+              },
+              spacing: {
+                "card-aspect-ratio": "5/7",
+                "gutter": "24px",
+                "unit": "4px",
+                "margin-desktop": "64px",
+                "margin-mobile": "20px"
+              },
+              fontFamily: {
+                "label-mono": ["Space Mono", "monospace"],
+                "headline-md": ["Cormorant Garamond", "serif"],
+                "display-lg": ["Cormorant Garamond", "serif"],
+                "body-base": ["Inter", "sans-serif"]
+              }
+            }
+          }
+        }
+    </script>
+<style>body {
+    background-color: #0b0a08;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuA1Tr5bQGeQtRzB1RSEiSupy41iltdGNQCug6n5SeqJ8tF5p8ROvGmZ0ERC_IJSgOiMY_m7WULp3ikpVwKG78jOmuHjrbGi3-zP4Qey5JeinJX5IGQHn1at_GwWPh7XzJyj21p8tvGnQOexFUMuh3c7NguC_BoOV9XTKywICh56-rrIM27EuhT2hUqzaifILzRMT8uyF3VvIrfw6wFmRU-KRXyH9zhU6uKwMDNvK6t7x-yCZ_Yd71iVmFCCaMCHltTAJO6AH-LiWBXv);
+    /* Subtle noise/grain texture */
+    cursor: crosshair
+    }
+.small-caps {
+    font-variant: small-caps
+    }
+.grain-overlay {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBe6HRdq4GUeimr5lkMjeUp6eoHKoznY3sIX6cSyKwZAhBFjsZJeR9xpz6cMDYstHmnALaDoNu9JdDlCq8elsnDxDBfzqwH7ZSsXXzWLV-npWIGs2CjPTiATYzOKpkT9Zg77_9NenXzUl_U4MYHOf-xZCP8IJ9Xq4wZF6QKhUD0nws8Ej6s9DCOftFkQLc5DeOKvvEB-ZuqTdP6nuAFWgR1S-RmzQ18ttxfORCr0keUolegAJh8W9uJ8A7vJGp2L0VMqShB11fs3Zyx);
+    mix-blend-mode: overlay;
+    opacity: 0.03
+    }
+.diagonal-hatching {
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(90, 67, 24, 0.1) 5px, rgba(90, 67, 24, 0.1) 6px)
+    }
+.pulse-amber {
+    animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite
+    }
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 12px 2px rgba(200, 159, 60, 0.2);
+        opacity: 0.8;
+        } 50% {
+        box-shadow: 0 0 32px 8px rgba(200, 159, 60, 0.5);
+        opacity: 1;
+        }
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24
+    }</style>
+</head>
+<body class="text-on-surface antialiased overflow-hidden selection:bg-primary/30">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full h-[64px] z-50 bg-surface/80 backdrop-blur-md border-b border-primary/20 flex justify-between items-center px-margin-desktop">
+<div class="font-label-mono text-body-base uppercase tracking-widest text-primary flex items-center gap-2">
+<span class="text-headline-md font-headline-md small-caps tracking-[0.2em]">RELIQUARY</span>
+<span class="text-primary text-sm">✦</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-[36px] h-[36px] border border-primary/40 rounded-full flex items-center justify-center hover:border-primary/80 transition-colors group">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary" data-icon="help">help</span>
+</button>
+<button class="w-[36px] h-[36px] border border-primary/40 rounded-full flex items-center justify-center hover:border-primary/80 transition-colors group">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="relative w-full h-screen flex flex-col items-center justify-center pt-[64px] pb-[56px] px-margin-mobile md:px-margin-desktop">
+<div class="grain-overlay absolute inset-0 pointer-events-none"></div>
+<!-- Typography Cluster -->
+<div class="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+<h1 class="font-headline-md text-[56px] text-[#f4ead5] leading-tight mb-4">
+                Your shelf is empty.
+            </h1>
+<p class="font-body-base italic text-[#c2b893] text-[18px]">
+                Begin — your first relic awaits.
+            </p>
+<div class="mx-auto mt-8 w-[60px] h-[1px] bg-[#c89f3c]/60"></div>
+</div>
+<!-- The Shelf Section -->
+<section class="flex flex-wrap justify-center gap-6 mb-16">
+<!-- Slot 1 -->
+<div class="w-[140px] h-[196px] rounded-[10px] border border-[#5a4318] shadow-inner-black diagonal-hatching relative opacity-40 transition-all duration-700 hover:opacity-60">
+<div class="absolute inset-0 bg-black/20 rounded-[10px]"></div>
+</div>
+<!-- Slot 2 -->
+<div class="w-[140px] h-[196px] rounded-[10px] border border-[#5a4318] shadow-inner-black diagonal-hatching relative opacity-40 transition-all duration-700 hover:opacity-60">
+<div class="absolute inset-0 bg-black/20 rounded-[10px]"></div>
+</div>
+<!-- Slot 3 (Active/Interactive) -->
+<button aria-label="Begin — reveal your first relic" class="w-[140px] h-[196px] rounded-[10px] border-[1.5px] border-[#c89f3c] bg-surface-container-low relative flex items-center justify-center pulse-amber group cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/40">
+<!-- Image Background for the Slot (Conceptual) -->
+<div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity bg-center bg-cover" data-alt="A dark, cinematic studio shot of a weathered wooden shelf in a moonlit room. A single, ornate artifact sits in the center, casting a soft golden glow. The atmosphere is quiet, mystical, and scholarly, with fine particles of dust dancing in a single shaft of amber light. Dark, muted tones of charcoal and mahogany dominate the composition." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAazNDUVjHeX_aF91lPRG8HtIxGw0rPoNqsIrXHYD4_8S8RnHFIgGPTIDa7nutl_Z06wLQDQWwpzJ2hGvDI1fTsT7Wvz5ba1KEe1q-Kx5EtVzg1kyPcPRRwkDKGNaAOVmMxVJ8QtV87iWcl7uRAoizR_6ryIJTrAhExyx9R5i4uCXnUZK-Ce8ztj0qM-Npz5B21bYAvNHGLxMn799PpsTn97bdq447_PcLVozyT9LDCJ6LBX5i5nupAxlnC015m9xWgnBcGeaXZ84uT')">
+</div>
+<span class="text-[#c89f3c] text-3xl transition-all duration-500 group-hover:rotate-90">✦</span>
+</button>
+<!-- Slot 4 -->
+<div class="w-[140px] h-[196px] rounded-[10px] border border-[#5a4318] shadow-inner-black diagonal-hatching relative opacity-40 transition-all duration-700 hover:opacity-60">
+<div class="absolute inset-0 bg-black/20 rounded-[10px]"></div>
+</div>
+</section>
+<!-- CTA Action -->
+<div class="flex justify-center">
+<button class="bg-[#c89f3c] text-[#0b0a08] font-label-mono text-[14px] small-caps tracking-[0.2em] px-12 py-4 rounded-full hover:bg-primary transition-all duration-300 hover:tracking-[0.3em] shadow-lg shadow-primary/10 active:scale-95">
+                Reveal first relic
+            </button>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute bottom-24 left-margin-desktop opacity-20 pointer-events-none hidden lg:block">
+<span class="font-label-mono text-[10px] text-primary uppercase tracking-widest leading-loose">
+                Archive Ref. 000-0<br/>
+                Status: Dormant
+            </span>
+</div>
+</main>
+<!-- Footer Shell -->
+<footer class="fixed bottom-0 w-full h-[56px] z-50 bg-surface/80 backdrop-blur-md border-t border-primary/20 flex justify-center items-center px-margin-desktop">
+<p class="font-label-mono text-[12px] italic text-[#c2b893] opacity-70 tracking-wide">
+            shelves grow. nothing here is random. <span class="mx-2">─</span> ✦
+        </p>
+</footer>
+<!-- Atmosphere Micro-interactions Script -->
+<script>
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            // Subtle parallax for the background noise could go here, 
+            // but we'll stick to a very light radial gradient follow for 'candlelight'
+            document.body.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(237, 193, 90, 0.03) 0%, #0b0a08 60%)`;
+        });
+
+        // Pulsing animation reset on click for feedback
+        const activeSlot = document.querySelector('button[aria-label="Begin — reveal your first relic"]');
+        activeSlot.addEventListener('click', () => {
+            activeSlot.style.animation = 'none';
+            activeSlot.offsetHeight; // trigger reflow
+            activeSlot.style.animation = null;
+            
+            // Log interaction
+            console.log('Initiating relic reveal sequence...');
+        });
+    </script>
+</body></html>

@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/*
+ * Boilerplate tokens — REPLACED on first `stitch-design` run.
+ * Do not hand-author beyond this point. See .stitch/DESIGN.md and
+ * .claude/rules/ui-design-pipeline.md.
+ */
+@theme {
+  --color-surface: #0b0a08;
+  --color-surface-raised: #15130f;
+  --color-ink: #f4ead5;
+  --color-ink-muted: #c2b893;
+  --color-accent: #c89f3c;
+  --color-accent-soft: #5a4318;
+
+  --font-display: "Cormorant Garamond", "Iowan Old Style", "Palatino", serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  --radius-card: 14px;
+  --radius-slot: 10px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
