@@ -1,0 +1,8 @@
+version: "1.0"
+description: "ll-RELIQUARY — browser-based collectable card/artifact game (W7 @lab sandbox). Phase: BRAINSTORM → PLAN → ARCHITECTURE."
+git_trigger:
+  repository: "w7-mgfcode/w7-base"
+  branch: "master"
+health_checks:
+  - type: "http"
+    endpoint: "http://localhost:8282/health"
