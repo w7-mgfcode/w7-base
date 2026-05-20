@@ -55,12 +55,13 @@ export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 export interface Card { id: string; suit: Suit; rank: Rank; }
 
-export type TurnPhase =
-  | "WaitingForAttack"
-  | "WaitingForDefense"
-  | "ResolvingDefense"
-  | "RoundOver"
-  | "MatchOver";
+export type TurnState =
+  | "Dealing"
+  | "AwaitingAttack"
+  | "AwaitingDefense"
+  | "Resolving"
+  | "RoundEnded"
+  | "MatchEnded";
 
 export type ValidationError = { code: string; message: string; details?: unknown };
 
@@ -281,7 +282,7 @@ src/
 
 ### Level 1: Coherence
 
-- [ ] Every screen in §B has a parent state in `TurnPhase` (no orphan UI)
+- [ ] Every screen in §B has a parent state in `TurnState` (no orphan UI)
 - [ ] Every server-to-client message has a matching event in the analytics taxonomy where appropriate
 - [ ] Every AI level can be implemented exclusively through the **Rules-engine surface** declared above — no AI reaches into core internals
 - [ ] Reconnection flow's `PrivateSnapshot` payload matches the output of `createPrivateView` from PRP 2
