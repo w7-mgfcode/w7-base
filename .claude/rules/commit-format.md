@@ -23,6 +23,7 @@ type(scope): description (#issue)
 | `mcp` | KNOWRAG `apps/mcp/` |
 | `ingest` | KNOWRAG ingestion pipeline (crawling/embedding/chunking) |
 | `reliquary` | Anything under `@lab/ll-RELIQUARY/` (browser-based collectable artifact game) |
+| `cardshed` | Anything under `@lab/ll-CARDSHED/` (CARD SHED card game — pure-logic core + UI + bots) |
 | `repo` | Repo-wide hygiene (gitignore, scaffolding, untracked-path triage) |
 | `platform` | `.bin/`, `.shared/`, top-level CLI |
 | `stacks` | Anything under `@ops/`, `@dev/`, `@prod/` (any single zone-stack) |
