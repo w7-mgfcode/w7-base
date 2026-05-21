@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CARD SHED - Table Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Playfair+Display:wght@600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#56615d",
+                        "on-secondary-container": "#5b3800",
+                        "inverse-on-surface": "#2d3133",
+                        "on-tertiary": "#003732",
+                        "surface-tint": "#bec9c4",
+                        "error": "#ffb4ab",
+                        "background": "#101415",
+                        "primary-fixed-dim": "#bec9c4",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "surface-container-highest": "#323537",
+                        "on-tertiary-fixed": "#00201d",
+                        "on-background": "#e0e3e5",
+                        "on-primary": "#28332f",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "on-secondary": "#472a00",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#272a2c",
+                        "secondary": "#ffb95f",
+                        "on-primary-fixed-variant": "#3e4945",
+                        "on-surface-variant": "#c3c8c5",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "surface": "#101415",
+                        "secondary-container": "#ee9800",
+                        "surface-container-low": "#191c1e",
+                        "inverse-surface": "#e0e3e5",
+                        "secondary-fixed": "#ffddb8",
+                        "tertiary-fixed": "#89f5e7",
+                        "on-surface": "#e0e3e5",
+                        "tertiary-container": "#002723",
+                        "primary-container": "#1a2421",
+                        "primary-fixed": "#dae5e0",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-primary-container": "#818c87",
+                        "tertiary": "#6bd8cb",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "outline-variant": "#434846",
+                        "surface-variant": "#323537",
+                        "primary": "#bec9c4",
+                        "surface-bright": "#363a3b",
+                        "surface-container-lowest": "#0b0f10",
+                        "on-error": "#690005",
+                        "surface-container": "#1d2022",
+                        "on-primary-fixed": "#141e1b",
+                        "outline": "#8d928f",
+                        "surface-dim": "#101415",
+                        "on-tertiary-container": "#1a998d",
+                        "on-error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "panel-padding": "24px",
+                        "card-overlap": "-40px",
+                        "table-margin": "32px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"],
+                        "card-rank": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "card-rank": ["28px", {"lineHeight": "1", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .inner-shadow {
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .card-shadow {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .card-active-shadow {
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+        }
+        .felt-bg {
+            background-color: #1A2421; /* Deep primary felt */
+            background-image: radial-gradient(circle at center, #232d29 0%, #1A2421 100%);
+        }
+        .suit-red { color: #ef4444; }
+        .suit-black { color: #101415; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-sm h-[900px] w-[1440px] overflow-hidden flex flex-col items-center justify-between">
+<!-- Top Header Component (Shared Logic) -->
+<header class="docked full-width top-0 bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-gutter h-14 z-50">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors group active:scale-95 duration-100">
+<span class="material-symbols-outlined text-primary">menu</span>
+</button>
+<span class="font-display-lg text-headline-md text-primary uppercase tracking-widest">CARD SHED</span>
+</div>
+<nav class="flex items-center gap-3">
+<div class="px-4 py-1.5 rounded-full bg-surface-container-high border border-outline-variant flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Alice · 6 (waiting)</span>
+</div>
+<!-- Defender Highlighted Gold -->
+<div class="px-4 py-1.5 rounded-full bg-secondary-container border border-secondary flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
+<span class="w-2 h-2 rounded-full bg-on-secondary-container animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-on-secondary-container font-bold">Bo · 4 (defender)</span>
+</div>
+<div class="px-4 py-1.5 rounded-full bg-surface-container-high border border-outline-variant flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Charlie · 5 (attacker)</span>
+</div>
+</nav>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors group active:scale-95 duration-100">
+<span class="material-symbols-outlined text-primary">help_outline</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors group active:scale-95 duration-100">
+<span class="material-symbols-outlined text-primary">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Game Arena -->
+<main class="flex-grow w-full felt-bg relative flex flex-col items-center justify-center pt-8 pb-32">
+<!-- Game-State Chips -->
+<div class="absolute top-4 left-gutter flex flex-col gap-3">
+<div class="flex items-center gap-4 bg-surface-container-lowest/80 backdrop-blur-md px-4 py-3 rounded-xl border border-outline-variant/30">
+<div class="flex flex-col items-center">
+<span class="text-[32px] leading-none suit-black">♠</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase mt-1">Trump</span>
+</div>
+<div class="w-px h-10 bg-outline-variant/30"></div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md text-primary">37</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase mt-1">Deck</span>
+</div>
+<div class="w-px h-10 bg-outline-variant/30"></div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md text-primary">2</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase mt-1">Discard</span>
+</div>
+</div>
+</div>
+<!-- The Table / Pending-Attack Panel -->
+<section class="w-[800px] h-[400px] rounded-[40px] inner-shadow border border-white/5 relative flex flex-col items-center justify-center">
+<!-- Table Labeling -->
+<div class="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+<h2 class="font-display-lg text-headline-md text-primary/40 uppercase tracking-[0.2em] mb-1">Pending Attack</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant/50">Awaiting Defense · Defender: Bo</p>
+</div>
+<!-- Card Play Area -->
+<div class="flex items-center gap-16 mt-12">
+<!-- Unbeaten Card -->
+<div class="relative group cursor-pointer">
+<div class="absolute -inset-4 rounded-xl border-2 border-dashed border-secondary/50 animate-[pulse_3s_infinite]"></div>
+<!-- Card 9 Clubs -->
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2 relative overflow-hidden transition-transform duration-200 group-hover:-translate-y-2">
+<div class="flex flex-col items-start leading-none">
+<span class="font-card-rank text-card-rank text-on-background">9</span>
+<span class="text-lg text-on-background">♣</span>
+</div>
+<div class="self-center text-4xl text-on-background">♣</div>
+<div class="flex flex-col items-end leading-none rotate-180">
+<span class="font-card-rank text-card-rank text-on-background">9</span>
+<span class="text-lg text-on-background">♣</span>
+</div>
+</div>
+<span class="absolute -bottom-10 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-secondary uppercase whitespace-nowrap bg-secondary-container/20 px-2 py-1 rounded">Needs Beat</span>
+</div>
+<!-- Beaten Pair -->
+<div class="relative">
+<!-- Bottom Card: K Spades -->
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2 absolute top-0 left-0 opacity-80 scale-95 origin-top-left">
+<div class="flex flex-col items-start leading-none">
+<span class="font-card-rank text-card-rank text-on-background">K</span>
+<span class="text-lg text-on-background">♠</span>
+</div>
+<div class="self-center text-4xl text-on-background">♠</div>
+<div class="rotate-180 self-end flex flex-col items-end">
+<span class="font-card-rank text-card-rank text-on-background">K</span>
+<span class="text-lg text-on-background">♠</span>
+</div>
+</div>
+<!-- Top Card: 7 Spades (fanned) -->
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2 relative rotate-[12deg] translate-x-4 translate-y-2 z-10 border border-outline-variant/20">
+<div class="flex flex-col items-start leading-none">
+<span class="font-card-rank text-card-rank text-on-background">7</span>
+<span class="text-lg text-on-background">♠</span>
+</div>
+<div class="self-center text-4xl text-on-background">♠</div>
+<div class="flex flex-col items-end leading-none rotate-180">
+<span class="font-card-rank text-card-rank text-on-background">7</span>
+<span class="text-lg text-on-background">♠</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Viewer's Hand Area -->
+<div class="absolute bottom-[100px] w-full flex flex-col items-center">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest uppercase">Your Hand (Bo)</h3>
+<div class="flex items-center -space-x-10">
+<!-- Card 10 Diamonds (Legal) -->
+<button class="group relative transition-all duration-300 hover:-translate-y-8 hover:z-50 hover:mx-4 focus:outline-none">
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2 border-2 border-secondary/50">
+<div class="flex flex-col items-start leading-none suit-red">
+<span class="font-card-rank text-card-rank">10</span>
+<span class="text-lg">♦</span>
+</div>
+<div class="self-center text-4xl suit-red">♦</div>
+<div class="rotate-180 self-end flex flex-col items-end suit-red">
+<span class="font-card-rank text-card-rank">10</span>
+<span class="text-lg">♦</span>
+</div>
+</div>
+</button>
+<!-- Card J Diamonds (Legal) -->
+<button class="group relative transition-all duration-300 hover:-translate-y-8 hover:z-50 hover:mx-4 focus:outline-none">
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2 border-2 border-secondary/50">
+<div class="flex flex-col items-start leading-none suit-red">
+<span class="font-card-rank text-card-rank">J</span>
+<span class="text-lg">♦</span>
+</div>
+<div class="self-center text-4xl suit-red">♦</div>
+<div class="rotate-180 self-end flex flex-col items-end suit-red">
+<span class="font-card-rank text-card-rank">J</span>
+<span class="text-lg">♦</span>
+</div>
+</div>
+</button>
+<!-- Card Q Hearts (Dimmed) -->
+<div class="relative opacity-40 grayscale-[0.5] scale-95 translate-y-2 cursor-not-allowed">
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2">
+<div class="flex flex-col items-start leading-none suit-red">
+<span class="font-card-rank text-card-rank">Q</span>
+<span class="text-lg">♥</span>
+</div>
+<div class="self-center text-4xl suit-red">♥</div>
+<div class="rotate-180 self-end flex flex-col items-end suit-red">
+<span class="font-card-rank text-card-rank">Q</span>
+<span class="text-lg">♥</span>
+</div>
+</div>
+</div>
+<!-- Card 7 Hearts (Dimmed) -->
+<div class="relative opacity-40 grayscale-[0.5] scale-95 translate-y-2 cursor-not-allowed">
+<div class="w-[80px] h-[112px] bg-white rounded-xl card-shadow flex flex-col justify-between p-2">
+<div class="flex flex-col items-start leading-none suit-red">
+<span class="font-card-rank text-card-rank">7</span>
+<span class="text-lg">♥</span>
+</div>
+<div class="self-center text-4xl suit-red">♥</div>
+<div class="rotate-180 self-end flex flex-col items-end suit-red">
+<span class="font-card-rank text-card-rank">7</span>
+<span class="text-lg">♥</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-8 h-[72px] bg-surface-container-highest/90 backdrop-blur-lg border-t border-outline-variant/30 shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check_box_outline_blank</span>
+<span class="font-body-sm text-on-surface-variant italic">Select an unbeaten card to beat</span>
+</div>
+<div class="flex items-center gap-6">
+<button class="px-8 py-2.5 rounded-full border border-outline text-on-surface-variant font-label-caps text-label-caps hover:bg-surface-variant transition-all active:scale-95">
+                Pass
+            </button>
+<button class="px-10 py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps font-bold hover:shadow-[0_0_20px_rgba(238,152,0,0.4)] transition-all active:scale-95">
+                Stop
+            </button>
+</div>
+</footer>
+<!-- Atmosphere Effects -->
+<div class="fixed inset-0 pointer-events-none z-[1]">
+<!-- Subtle noise overlay for felt texture -->
+<div class="absolute inset-0 opacity-[0.03] mix-blend-overlay" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAOJkL-hQA5ZSnHm5r3VYMk8KuWcYEzl9fKLy_uQY-2s6LUnJj-_joAxDwpJX7bs_z2cUWJhUhbBgIxBOdglHtVKCrWsNNbetSGZZWUu2U2mZc-1OX3XnvxRdOTn26XDFvyUN5kb4o_GkMZLY0-zGJXrnGSrlQp4AVSQJekUic8dd613uyeHZv7Kr0pVRML_ZlhaQDgiY7WGDkFGJOPccdFOegnkA1Yez6rUiKnjLolibgWbwnlkUfvjYy-OMNIFSzPZLeH24uagAg');"></div>
+</div>
+<script>
+        // Micro-interaction: Hover effects for legal cards
+        const legalCards = document.querySelectorAll('button.group');
+        legalCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // Potential snap sound or visual feedback
+            });
+        });
+
+        // Simple turn timer simulation
+        const defenderChip = document.querySelector('.bg-secondary-container');
+        let opacity = 1;
+        let direction = -0.01;
+        function animateGlow() {
+            opacity += direction;
+            if (opacity < 0.5 || opacity > 1) direction *= -1;
+            defenderChip.style.boxShadow = `0 0 ${12 + (1 - opacity) * 10}px rgba(245,158,11, ${0.3 * opacity})`;
+            requestAnimationFrame(animateGlow);
+        }
+        animateGlow();
+    </script>
+</body></html>
