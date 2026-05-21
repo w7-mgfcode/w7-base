@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #232D29 0%, #1A2421 70%, #101415 100%);
+        }
+        .felt-texture::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        .card-fanned {
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            transform-origin: bottom center;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#ee9800",
+                      "background": "#101415",
+                      "primary-container": "#1a2421",
+                      "surface-container-highest": "#323537",
+                      "error": "#ffb4ab",
+                      "outline-variant": "#434846",
+                      "on-surface": "#e0e3e5",
+                      "on-secondary-fixed": "#2a1700",
+                      "surface-variant": "#323537",
+                      "error-container": "#93000a",
+                      "primary-fixed": "#dae5e0",
+                      "on-tertiary-container": "#1a998d",
+                      "on-surface-variant": "#c3c8c5",
+                      "surface-tint": "#bec9c4",
+                      "surface-container": "#1d2022",
+                      "on-tertiary-fixed-variant": "#005049",
+                      "surface-dim": "#101415",
+                      "on-primary-fixed": "#141e1b",
+                      "surface-container-lowest": "#0b0f10",
+                      "surface-container-high": "#272a2c",
+                      "on-background": "#e0e3e5",
+                      "tertiary": "#6bd8cb",
+                      "surface-container-low": "#191c1e",
+                      "on-primary-fixed-variant": "#3e4945",
+                      "inverse-surface": "#e0e3e5",
+                      "surface-bright": "#363a3b",
+                      "on-secondary-container": "#5b3800",
+                      "primary-fixed-dim": "#bec9c4",
+                      "surface": "#101415",
+                      "outline": "#8d928f",
+                      "on-secondary": "#472a00",
+                      "on-tertiary-fixed": "#00201d",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "inverse-primary": "#56615d",
+                      "primary": "#bec9c4",
+                      "secondary-fixed": "#ffddb8",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "on-primary-container": "#818c87",
+                      "inverse-on-surface": "#2d3133",
+                      "tertiary-container": "#002723",
+                      "tertiary-fixed-dim": "#6bd8cb",
+                      "on-tertiary": "#003732",
+                      "tertiary-fixed": "#89f5e7",
+                      "on-error-container": "#ffdad6",
+                      "secondary": "#ffb95f",
+                      "on-error": "#690005"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "table-margin": "32px",
+                      "panel-padding": "24px",
+                      "unit": "8px",
+                      "card-overlap": "-40px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "card-rank": ["Inter"],
+                      "headline-md": ["Playfair Display"],
+                      "display-lg": ["Playfair Display"],
+                      "body-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "card-rank": ["28px", {"lineHeight": "1", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="felt-texture min-h-screen flex flex-col items-center justify-center text-on-surface">
+<!-- Decorative Fanned Cards -->
+<div class="fixed bottom-[-100px] left-[-80px] opacity-[0.07] rotate-[25deg] pointer-events-none select-none">
+<div class="flex gap-[-60px]">
+<div class="w-[280px] h-[400px] bg-primary border-[3px] border-on-primary-fixed-variant rounded-xl card-fanned rotate-[-15deg]"></div>
+<div class="w-[280px] h-[400px] bg-primary border-[3px] border-on-primary-fixed-variant rounded-xl card-fanned rotate-[0deg] mt-[-20px]"></div>
+<div class="w-[280px] h-[400px] bg-primary border-[3px] border-on-primary-fixed-variant rounded-xl card-fanned rotate-[15deg] mt-[-40px]"></div>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex flex-col items-center text-center max-w-[600px] mt-[102px]">
+<!-- Brand Block -->
+<header class="mb-12">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-3 block">WELCOME TO</span>
+<h1 class="font-display-lg text-display-lg text-primary tracking-[0.15em] mb-4">CARD SHED</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">A shifting-trump card game for three or four friends.</p>
+</header>
+<!-- Navigation Stack -->
+<nav class="flex flex-col gap-4 items-center">
+<!-- Primary Action -->
+<button class="w-[280px] h-[56px] rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps flex items-center justify-center transition-all duration-300 hover:scale-[1.02] hover:brightness-110 active:scale-95 shadow-[0_0_24px_rgba(245,158,11,0.25)]" onclick="window.location.reload()">
+                PLAY
+            </button>
+<!-- Secondary Action -->
+<button class="w-[280px] h-[56px] rounded-full border border-outline-variant bg-transparent text-on-surface font-label-caps text-label-caps flex items-center justify-center transition-all duration-300 hover:bg-surface-container-high hover:border-outline active:scale-95">
+                RULES
+            </button>
+<!-- Tertiary Action -->
+<button class="w-[280px] h-[56px] rounded-full border border-outline-variant bg-transparent text-on-surface font-label-caps text-label-caps flex items-center justify-center transition-all duration-300 hover:bg-surface-container-high hover:border-outline active:scale-95">
+                SETTINGS
+            </button>
+</nav>
+</main>
+<!-- Footer from Shared Components -->
+<footer class="fixed bottom-0 left-0 w-full flex flex-col items-center gap-2 pb-8 pointer-events-none">
+<div class="flex items-center gap-4 text-on-surface-variant font-body-sm text-body-sm opacity-40">
+<span>v0.x</span>
+<span class="w-[1px] h-3 bg-outline-variant"></span>
+<span>MVP</span>
+<span class="w-[1px] h-3 bg-outline-variant"></span>
+<span>hot-seat browser</span>
+</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant opacity-30 mt-1">
+            v1.0.4 Tournament Mode Active
+        </div>
+</footer>
+<!-- Background Atmospheric Interaction -->
+<script>
+        document.addEventListener('mousemove', (e) => {
+            const body = document.querySelector('body');
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            body.style.background = `radial-gradient(circle at ${x}% ${y}%, #232D29 0%, #1A2421 70%, #101415 100%)`;
+        });
+
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFRm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ9vT19vT19vT19vT19vT18=');
+                audio.volume = 0.05;
+                // audio.play().catch(() => {}); // Optional silent feedback
+            });
+        });
+    </script>
+</body></html>
