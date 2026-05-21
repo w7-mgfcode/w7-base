@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CARD SHED - Player Setup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#bec9c4",
+                        "surface-variant": "#323537",
+                        "secondary-fixed": "#ffddb8",
+                        "inverse-primary": "#56615d",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "on-secondary-container": "#5b3800",
+                        "on-tertiary-fixed": "#00201d",
+                        "tertiary-container": "#002723",
+                        "surface-container-lowest": "#0b0f10",
+                        "surface-container-low": "#191c1e",
+                        "tertiary": "#6bd8cb",
+                        "surface-bright": "#363a3b",
+                        "tertiary-fixed": "#89f5e7",
+                        "error-container": "#93000a",
+                        "secondary": "#ffb95f",
+                        "on-background": "#e0e3e5",
+                        "on-surface": "#e0e3e5",
+                        "on-error": "#690005",
+                        "on-secondary": "#472a00",
+                        "surface-container": "#1d2022",
+                        "on-tertiary-container": "#1a998d",
+                        "on-secondary-fixed": "#2a1700",
+                        "surface-tint": "#bec9c4",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#101415",
+                        "surface": "#101415",
+                        "primary-fixed": "#dae5e0",
+                        "on-primary-container": "#818c87",
+                        "inverse-on-surface": "#2d3133",
+                        "inverse-surface": "#e0e3e5",
+                        "surface-container-high": "#272a2c",
+                        "on-primary-fixed": "#141e1b",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "outline-variant": "#434846",
+                        "on-primary": "#28332f",
+                        "outline": "#8d928f",
+                        "on-surface-variant": "#c3c8c5",
+                        "secondary-container": "#ee9800",
+                        "primary-container": "#1a2421",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "on-tertiary": "#003732",
+                        "surface-container-highest": "#323537",
+                        "primary-fixed-dim": "#bec9c4",
+                        "background": "#101415",
+                        "on-primary-fixed-variant": "#3e4945"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "panel-padding": "24px",
+                        "unit": "8px",
+                        "table-margin": "32px",
+                        "card-overlap": "-40px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "label-caps": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "card-rank": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "card-rank": ["28px", {"lineHeight": "1", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #101415;
+            background-image: radial-gradient(circle at center, #1a2421 0%, #101415 100%);
+            color: #e0e3e5;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .input-focus-ring:focus {
+            outline: none;
+            border-color: #6bd8cb;
+            box-shadow: 0 0 0 1px #6bd8cb;
+        }
+        .cta-glow {
+            box-shadow: 0 0 20px rgba(238, 152, 0, 0.3);
+        }
+        .cta-disabled {
+            background-color: #272a2c;
+            color: #434846;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-body-lg">
+<!-- Top Bar Component -->
+<header class="fixed top-0 w-full px-gutter py-4 flex justify-between items-center z-50">
+<a class="font-label-caps text-label-caps text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity flex items-center gap-2 px-8 py-4" href="#">
+<span class="material-symbols-outlined text-[14px]">arrow_back_ios</span>
+            MAIN MENU
+        </a>
+<div class="font-display-lg text-[24px] text-primary tracking-tighter">CARD SHED</div>
+<div class="w-[120px]"></div> <!-- Spacer to balance -->
+</header>
+<!-- Side Navigation Shell (Hidden as per Contextual Suppression) -->
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center relative overflow-hidden">
+<!-- Background Motif -->
+<div class="absolute bottom-[-50px] left-[-50px] opacity-[0.07] rotate-[25deg] pointer-events-none select-none">
+<div class="flex gap-4">
+<div class="w-64 h-96 bg-primary rounded-xl border border-outline shadow-2xl"></div>
+<div class="w-64 h-96 bg-primary rounded-xl border border-outline shadow-2xl -ml-24 mt-8"></div>
+<div class="w-64 h-96 bg-primary rounded-xl border border-outline shadow-2xl -ml-24 mt-16"></div>
+</div>
+</div>
+<!-- Setup Card Panel -->
+<section class="w-full max-w-[640px] px-gutter flex flex-col items-center">
+<h1 class="font-headline-md text-[36px] font-bold text-center mb-12 text-on-surface">WHO'S PLAYING?</h1>
+<div class="w-full space-y-4 mb-8">
+<!-- Player Row 1 -->
+<div class="grid grid-cols-[100px_1fr] items-center gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">PLAYER 1</label>
+<input class="w-full max-w-[480px] h-14 bg-surface-container-low border border-outline-variant rounded-lg px-4 text-on-surface input-focus-ring placeholder:text-outline-variant" placeholder="Enter Name" type="text"/>
+</div>
+<!-- Player Row 2 -->
+<div class="grid grid-cols-[100px_1fr] items-center gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">PLAYER 2</label>
+<input class="w-full max-w-[480px] h-14 bg-surface-container-low border border-outline-variant rounded-lg px-4 text-on-surface input-focus-ring placeholder:text-outline-variant" placeholder="Enter Name" type="text"/>
+</div>
+<!-- Player Row 3 -->
+<div class="grid grid-cols-[100px_1fr] items-center gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">PLAYER 3</label>
+<input class="w-full max-w-[480px] h-14 bg-surface-container-low border border-outline-variant rounded-lg px-4 text-on-surface input-focus-ring placeholder:text-outline-variant" placeholder="Enter Name" type="text"/>
+</div>
+<!-- Player Row 4 (Special) -->
+<div class="grid grid-cols-[100px_1fr_auto] items-center gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">PLAYER 4</label>
+<input class="w-full max-w-[480px] h-14 bg-surface-container-low border border-outline-variant rounded-lg px-4 text-on-surface input-focus-ring placeholder:text-outline-variant" placeholder="Enter Name" type="text"/>
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-error transition-colors uppercase">REMOVE</button>
+</div>
+</div>
+<!-- Advanced Section -->
+<div class="w-full flex flex-col items-center">
+<button class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-1 uppercase hover:text-primary transition-colors" id="advancedToggle">
+<span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                    ADVANCED
+                </button>
+<div class="hidden mt-6 flex items-center gap-4 p-4 bg-surface-container-highest/30 rounded-lg" id="advancedContent">
+<span class="font-label-caps text-[10px] text-outline">RNG SEED</span>
+<code class="bg-surface-container-low px-3 py-1 rounded font-mono text-[12px] text-tertiary">0x4a2c88f1</code>
+<button class="font-label-caps text-label-caps bg-surface-variant px-3 py-1 rounded hover:bg-outline-variant transition-colors uppercase">RANDOMIZE</button>
+</div>
+</div>
+<!-- Validation & CTA -->
+<div class="mt-12 flex flex-col items-center">
+<div class="h-5 mb-4 font-label-caps text-label-caps text-error opacity-90 transition-opacity">
+<!-- Validation Message Reserved Space -->
+                    Enter at least 3 names to start
+                </div>
+<button class="w-[280px] h-14 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps rounded-full cta-glow flex items-center justify-center tracking-widest hover:scale-105 active:scale-95 transition-all uppercase">
+                    START MATCH
+                </button>
+</div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="fixed bottom-0 w-full px-gutter py-4 flex justify-between items-end opacity-40 z-50">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+            v0.x <span class="mx-2">|</span> MVP <span class="mx-2">|</span> hot-seat browser
+        </div>
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.2em]">
+            © 2024 CARD SHED v1.0.4-beta. Tactical Precision Engine.
+        </div>
+</footer>
+<script>
+        // Toggle Advanced Settings
+        const toggleBtn = document.getElementById('advancedToggle');
+        const advancedContent = document.getElementById('advancedContent');
+        let isExpanded = false;
+
+        toggleBtn.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            advancedContent.classList.toggle('hidden');
+            const icon = toggleBtn.querySelector('.material-symbols-outlined');
+            icon.textContent = isExpanded ? 'arrow_drop_up' : 'arrow_drop_down';
+        });
+
+        // Simple mock interaction for the Start Match button state
+        const inputs = document.querySelectorAll('input');
+        const cta = document.querySelector('button.cta-glow');
+        const validation = document.querySelector('.text-error');
+
+        function checkForm() {
+            const filledCount = Array.from(inputs).filter(input => input.value.trim().length > 0).length;
+            if (filledCount >= 3) {
+                cta.classList.remove('cta-disabled');
+                cta.classList.add('bg-secondary-container');
+                validation.classList.add('opacity-0');
+            } else {
+                cta.classList.add('cta-disabled');
+                cta.classList.remove('bg-secondary-container');
+                validation.classList.remove('opacity-0');
+            }
+        }
+
+        inputs.forEach(input => input.addEventListener('input', checkForm));
+        
+        // Initial state
+        checkForm();
+    </script>
+</body></html>
