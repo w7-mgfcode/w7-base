@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/*
+ * Placeholder tokens — REPLACED on first `stitch-design` run (M2).
+ * Do not hand-author beyond this point. See .stitch/DESIGN.md and
+ * .claude/rules/ui-design-pipeline.md.
+ */
+@theme {
+  --color-surface: #0e0f12;
+  --color-surface-raised: #181a1f;
+  --color-ink: #f1ece1;
+  --color-ink-muted: #a8a194;
+  --color-accent: #c9a050;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family:
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
