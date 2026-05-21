@@ -1,0 +1,8 @@
+version: "1.0"
+description: "ll-CARDSHED — CARD SHED card game (W7 @lab sandbox). Pure-logic core sealed (PRP 2); browser hot-seat MVP next (PRP 3 M1)."
+git_trigger:
+  repository: "w7-mgfcode/w7-base"
+  branch: "master"
+health_checks:
+  - type: "http"
+    endpoint: "http://localhost:4343/"
