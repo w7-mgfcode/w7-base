@@ -74,7 +74,7 @@ SUBJECT="$(printf '%s\n' "$MSG" | head -1)"
 # --- Validation ----------------------------------------------------------
 
 # 1. Subject grammar.
-SCOPE_ALLOW='knowrag|api|ui|mcp|ingest|repo|platform|stacks|state|ops|ci|docs|release'
+SCOPE_ALLOW='knowrag|reliquary|cardshed|api|ui|mcp|ingest|repo|platform|stacks|state|ops|ci|docs|release'
 # Description: starts lowercase, may contain any non-newline (incl. internal
 # periods like SemVer `v0.1.0`), but must NOT end with a trailing period
 # immediately before the ` (#N)` issue ref.
