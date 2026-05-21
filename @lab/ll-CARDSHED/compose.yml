@@ -1,0 +1,26 @@
+# ll-CARDSHED — bootstrap topology
+#
+# CARD SHED card game. Pure-logic deterministic core lives at
+# apps/core/ (sealed via PRP 2). This compose file is intentionally
+# a STUB at bootstrap — there is no deployable service yet.
+#
+# PRP 3 M1 will replace this placeholder with the real cardshed-ui
+# service (React + Vite + Tailwind v4, served by nginx). Online
+# multiplayer (PRP 3 M3+) adds cardshed-server (Rust + Axum).
+#
+# Image pins follow .claude/rules/docker-infra.md — never :latest.
+
+services:
+  cardshed-placeholder:
+    image: alpine:3.20.3
+    container_name: ${COMPOSE_PROJECT_NAME:-lab-ll-cardshed}-placeholder
+    command: tail -f /dev/null
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    networks:
+      - cardshed-net
+
+networks:
+  cardshed-net:
+    driver: bridge

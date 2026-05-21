@@ -1,0 +1,23 @@
+# Runtime secrets — never commit (use .env.sops when ready)
+.env
+
+# Container volumes
+data/
+
+# Dogfood / playwright artifacts (keep .gitkeep + curated reports)
+dogfood-output/*/
+!dogfood-output/.gitkeep
+!dogfood-output/*/report.md
+
+# Stitch generated screen exports (only DESIGN.md is committed)
+.stitch/screens/
+.stitch/projects/
+.stitch/*.tmp
+
+# Vite / build outputs (PRP 3 M1+)
+apps/ui/dist/
+apps/ui/.vite/
+
+# Editor noise
+.DS_Store
+*.swp
